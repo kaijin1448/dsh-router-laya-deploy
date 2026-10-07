@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dsh-router-laya 安装 / 移植指南</title>
+<meta name="generator" content="build-guide-html.cjs (marked)">
+<style>
+:root{
+  --bg:#ffffff; --fg:#1f2328; --muted:#59636e; --border:#d1d9e0;
+  --code-bg:#f6f8fa; --quote-bg:#f6f8fa; --accent:#0969da; --stripe:#f6f8fa;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --border:#30363d;
+    --code-bg:#161b22; --quote-bg:#161b22; --accent:#4493f8; --stripe:#161b22;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font:16px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",
+       "PingFang SC","Noto Sans SC",Roboto,Helvetica,Arial,sans-serif;
+}
+.wrap{max-width:1000px;margin:0 auto;padding:40px 24px 120px}
+h1,h2,h3{line-height:1.35;font-weight:650;scroll-margin-top:16px}
+h1{font-size:1.9rem;margin:0 0 .5em;padding-bottom:.4em;border-bottom:1px solid var(--border)}
+h2{font-size:1.35rem;margin:2.2em 0 .7em;padding-top:.7em;border-top:1px solid var(--border)}
+h3{font-size:1.08rem;margin:1.7em 0 .5em}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.anchor{opacity:0;margin-left:.4em;font-weight:400;font-size:.85em;transition:opacity .15s}
+h1:hover .anchor,h2:hover .anchor,h3:hover .anchor{opacity:.45}
+p,li,td,th{overflow-wrap:anywhere}
+code{
+  font-family:ui-monospace,SFMono-Regular,Consolas,"Cascadia Mono","Liberation Mono",monospace;
+  font-size:.875em;background:var(--code-bg);border:1px solid var(--border);
+  border-radius:6px;padding:.12em .38em;
+}
+pre{
+  background:var(--code-bg);border:1px solid var(--border);border-radius:8px;
+  padding:14px 16px;overflow-x:auto;line-height:1.6;
+}
+pre code{background:none;border:0;padding:0;font-size:.85em;white-space:pre}
+blockquote{
+  margin:1.2em 0;padding:.75em 1.1em;background:var(--quote-bg);
+  border-left:4px solid var(--accent);border-radius:0 8px 8px 0;
+}
+blockquote p{margin:.4em 0}
+table{border-collapse:collapse;width:100%;margin:1.2em 0;display:block;overflow-x:auto}
+th,td{border:1px solid var(--border);padding:8px 12px;text-align:left;vertical-align:top}
+th{background:var(--quote-bg);font-weight:600;white-space:nowrap}
+tbody tr:nth-child(2n){background:var(--stripe)}
+hr{border:0;border-top:1px solid var(--border);margin:2.6em 0}
+ol,ul{padding-left:1.6em}
+li{margin:.25em 0}
+.toc{background:var(--quote-bg);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin:1.8em 0}
+.toc summary{cursor:pointer;font-weight:600}
+.toc ol{list-style:none;margin:.7em 0 0;padding-left:0}
+.toc li{margin:.16em 0}
+.toc .lvl3{padding-left:1.5em;font-size:.94em;opacity:.9}
+.meta{color:var(--muted);font-size:.9em;margin:-.2em 0 1.8em}
+@media print{
+  body{background:#fff;color:#000}
+  .wrap{max-width:none;padding:0}
+  .anchor{display:none}
+  .toc{break-inside:avoid}
+  pre,blockquote,table{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="meta">本页由 <code>router-laya-install-guide.md</code> 生成 · 生成于 2026-10-07 12:40 UTC · 修改请改 .md 后重跑 <code>node build-guide-html.cjs</code></p>
+<details class="toc" open>
+<summary>目录</summary>
+<ol>
+  <li class="lvl2"><a href="#s2">0. 先搞清三个部件</a></li>
+  <li class="lvl2"><a href="#s3">1. 前置检查</a></li>
+  <li class="lvl2"><a href="#s4">2. 判定服务（装一次，DSH 与 OC 共用）</a></li>
+  <li class="lvl3"><a href="#s5">2.1 安装</a></li>
+  <li class="lvl3"><a href="#s6">2.2 建 venv（必须手动，因为 setup 有个 bug）</a></li>
+  <li class="lvl3"><a href="#s7">2.3 取 846 MB 权重</a></li>
+  <li class="lvl3"><a href="#s8">2.4 起服务并验收</a></li>
+  <li class="lvl3"><a href="#s9">2.5 随手测一下判定是否正常</a></li>
+  <li class="lvl3"><a href="#s10">2.6 安装期头号坑：torch WinError 1114（系统 VC 运行库过旧）</a></li>
+  <li class="lvl2"><a href="#s11">3. DSH 侧接入</a></li>
+  <li class="lvl3"><a href="#s12">3.1 装 loader 副本</a></li>
+  <li class="lvl3"><a href="#s13">3.2 写 profile 补丁层</a></li>
+  <li class="lvl3"><a href="#s14">3.3 芯片读不到数据？打 CORS 补丁（桌面端必做）</a></li>
+  <li class="lvl3"><a href="#s15">3.4 验收</a></li>
+  <li class="lvl2"><a href="#s16">4. OpenCode 侧接入</a></li>
+  <li class="lvl3"><a href="#s17">4.1 放插件</a></li>
+  <li class="lvl3"><a href="#s18">4.2 判定服务由谁拉起（OC 自启动，不依赖 DSH）</a></li>
+  <li class="lvl3"><a href="#s19">4.3 语义：picker 就是开关</a></li>
+  <li class="lvl3"><a href="#s20">4.4 两个运行时开关（不用重启）</a></li>
+  <li class="lvl3"><a href="#s21">4.5 验收</a></li>
+  <li class="lvl3"><a href="#s22">4.6 成本安全：这个插件不会改 provider/model</a></li>
+  <li class="lvl2"><a href="#s23">5. 排错表</a></li>
+  <li class="lvl2"><a href="#s24">6. 本地分叉清单（升级会覆盖，务必记账）</a></li>
+  <li class="lvl2"><a href="#s25">附录 A：权重下载器（fetch-laya-chunked.mjs）</a></li>
+  <li class="lvl2"><a href="#s26">附录 B：读 OC 消息库看每轮 reasoning token（oc-db-dur.py）</a></li>
+  <li class="lvl2"><a href="#s27">附录 C：OC 插件全文（机器 B 最终版，含 autostart）</a></li>
+  <li class="lvl2"><a href="#s28">附录 D：速查</a></li>
+  <li class="lvl2"><a href="#s29">附录 E：可选预热（登录计划任务，消掉冷启动窗口）</a></li>
+  <li class="lvl2"><a href="#s30">附录 F：torch WinError 1114 修复（msvc-fix.py）</a></li>
+  <li class="lvl2"><a href="#s31">附录 G：机器 B（OC 端）零到一落地实录（2026-10-07）</a></li>
+  <li class="lvl2"><a href="#s32">附录 H：机器 B（DSH 端）零到一落地实录（2026-10-07）</a></li>
+  <li class="lvl3"><a href="#s33">H.1 实际步骤</a></li>
+  <li class="lvl3"><a href="#s34">H.2 验收证据（实录）</a></li>
+  <li class="lvl3"><a href="#s35">H.3 本机特有的坑（按踩到的顺序）</a></li>
+  <li class="lvl3"><a href="#s36">H.4 归档与可复用脚本</a></li>
+</ol>
+</details>
+<h1 id="s1">dsh-router-laya 安装 / 移植指南<a class="anchor" href="#s1" aria-label="本节链接">#</a></h1>
+<blockquote>
+<p>本指南来自 2026-10-06 的一次完整落地：在一台 Windows 机器上把 dsh-router-laya 装进 <strong>DeepSeek Harness（DSH）</strong>，并把它移植给 <strong>OpenCode（OC）</strong>。
+文中所有结论都经过实测；踩到的坑、绕法、验收命令都写进来了。
+目标读者：在本机/新机上重做这套配置的人（或 agent）。</p>
+<p><strong>2026-10-07 更新</strong>：① 补上 OC 侧判定服务的<strong>自启动 / 冷启动 / 跨 harness 共享</strong>语义（§4.2）；② 新增<strong>成本安全</strong>一节（§4.6）—— OC 移植插件不会改 provider/model，而 DSH 内置路由表<strong>会</strong>走官方计费，故 §3.2 的 <code>tiers</code> 覆盖改为必写；③ 补上端口与健康检查的<strong>正确验法</strong>（DSH 沙箱里 <code>Get-NetTCPConnection</code>/WMI 是假阴性）；④ 新增<strong>附录 E：可选预热</strong>（登录计划任务，消掉冷启动窗口）。
+<strong>2026-10-07 二次更新（机器 B：OC 端零到一落地）</strong>：在第二台机器（6 核 CPU + 受 DLP 管控的环境，下称&quot;机器 B&quot;）从零装通 OC 侧全链路，补充四类实战修正：
+⑤ <strong>安装期三个硬坑</strong>（§2.2 / §2.6 / 附录 F）：npm 全局包在 WinGet 深路径 → 包内建 venv 触发 <code>WinError 206</code>（venv 挪短路径）；DLP 把 <code>requirements.lock.txt</code> 加密改名 <code>.IPGSD</code>（从 npm tarball 提取原文）；系统 VC 运行库过旧 → torch <code>c10.dll</code> 初始化失败 <code>WinError 1114</code>（每应用部署新版 runtime，免管理员）。
+⑥ <strong>权重下载提速</strong>（§2.3 / 附录 A）：单流 ~3.7 MB/min → 6 并发抢块 ~43 MB/min（12 倍，19 分钟下完 842 MB）。
+⑦ <strong>插件目录与导出形式以本机为准</strong>（§4.1）：机器 B 的插件目录是 <code>~/.config/opencode/plugin/</code>（<strong>单数</strong>，原文的 <code>plugins/</code> 复数来自机器 A）；导出用 <code>export default</code>。附录 C 已换成含 <strong>autostart</strong> 的完整版（修正原文&quot;§4.2 描述 autostart、附录 C 快照却没有&quot;的不一致）。
+⑧ <strong>判定延迟/超时必须按机器调</strong>（§4.5 / 附录 D）：机器 B 判定 <strong>4–9 s/轮</strong>（机器 A 1.4 s），插件默认 <code>ROUTER_LAYA_TIMEOUT_MS=6000</code> <strong>会永远超时</strong>，必须调大（本次 20000）。另：<code>provider/example-model</code> <strong>会</strong>上报 reasoning token（与本指南&quot;deepseek 系恒为 0&quot;不同），可用于 A/B 自验。
+落地实录与归档区见<strong>附录 G</strong>。
+<strong>2026-10-07 三次更新（机器 B：DSH 端接入落地）</strong>：在同一台机器 B 上把 <strong>DSH Desktop 的 <code>web</code> profile</strong> 接上同一个判定大脑。§3 整节按实测重写，并修正两处会让人踩坑（一处会直接吃光内存）的旧结论：
+⑨ <strong>DSH 侧没有 <code>dsh</code> CLI</strong>（§3.1）：包不能靠 <code>dsh plugin add</code> 进 profile，改用包内 <code>install.mjs</code> 复制进 profile 的 <code>node_modules</code> + <strong>手写插入行</strong>；机器 B 的 DSH 家目录是 <code>%APPDATA%\dsh-desktop\harness</code>（<strong>没有</strong> <code>~/.dsh</code>），profile 是 <code>web</code>。§3.2 的 <code>tiers</code> 按本机注册的 provider 改（机器 B：<code>provider/example-model</code>）。
+⑩ <strong>「重复启动会 EADDRINUSE 自然去重」在 Windows 上不成立</strong>（§4.2 / §6）：<code>HTTPServer</code> 默认 <code>SO_REUSEADDR</code>，第二个自动拉起能绑同一端口。OC 插件的 fail-safe 拉起叠出 <strong>4 个 842 MB 常驻实例</strong>，可用内存掉到 1.0 GB → 判定超时（&gt;20 s）→ 又触发拉起，正反馈。修法是服务端加<strong>命名互斥体单实例闸门</strong>（在加载 checkpoint 之前生效）。
+⑪ <strong>档位芯片要刷新窗口才出现</strong>（§3.4）：Web 启动图是页面加载时组合的，热挂载插件之后旧页面看不到芯片；另外热插入后的第一次 <code>/router-laya/mode</code> 读数可能是 <code>manual</code>（瞬时态），重新 apply 后稳定为 <code>auto</code>。
+DSH 端落地实录见<strong>附录 H</strong>。</p>
+</blockquote>
+<hr>
+<h2 id="s2">0. 先搞清三个部件<a class="anchor" href="#s2" aria-label="本节链接">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>部件</th>
+<th>是什么</th>
+<th>归谁</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>判定大脑</strong></td>
+<td>Python 服务 + 842 MB 微调分类模型（Laya 7 问），HTTP <code>127.0.0.1:8765</code></td>
+<td><strong>两个 harness 共用，装一次</strong></td>
+</tr>
+<tr>
+<td><strong>DSH 接入</strong></td>
+<td>npm bundle（host 半边走 Cordis patch）+ 浏览器芯片</td>
+<td>DSH 专用</td>
+</tr>
+<tr>
+<td><strong>OC 接入</strong></td>
+<td>一个本地 TS/JS 插件（<code>chat.params</code> 钩子）</td>
+<td>OC 专用</td>
+</tr>
+</tbody></table>
+<p>接口（自实现插件时的唯一契约）：</p>
+<pre><code>POST /judge   {&quot;task&quot;,&quot;prev_tier&quot;,&quot;prev_task&quot;,&quot;session_id&quot;}
+           -&gt; {&quot;tier&quot;:&quot;low|high|max&quot;,&quot;triggered_by&quot;,&quot;base_tier&quot;,&quot;labels&quot;,&quot;probs&quot;,&quot;ms&quot;,&quot;regenerate&quot;}
+GET  /health  -&gt; {&quot;protocol&quot;:&quot;finetuned&quot;,&quot;model&quot;:&quot;&lt;权重目录&gt;&quot;,&quot;status&quot;:&quot;ok&quot;}
+GET  /state   -&gt; {&quot;sessions&quot;:{ &quot;&lt;session_id&gt;&quot;:[最近 20 条判定] },&quot;protocol&quot;:&quot;finetuned&quot;}
+</code></pre>
+<p>判定<strong>只看三样</strong>：本轮消息文本、上轮档位、上轮文本。<strong>不读对话历史</strong>、不读文件/代码/工具结果；<code>session_id</code> 只用于 <code>/state</code> 展示。
+其中上轮信息只服务两件事：①「继续」这类短指令保持上轮档位；② 检测到重试就沿 <code>low→high→max</code> 升一级。</p>
+<hr>
+<h2 id="s3">1. 前置检查<a class="anchor" href="#s3" aria-label="本节链接">#</a></h2>
+<pre><code class="language-powershell">python --version          # 需要 &gt;= 3.10（3.12 最稳；3.13 实测可用）
+node --version            # 需要 &gt;= 18
+Get-PSDrive C | % { [math]::Round($_.Free/1GB,1) }   # 需要 ~2 GB（venv+权重实测 1.58 GB）
+</code></pre>
+<hr>
+<h2 id="s4">2. 判定服务（装一次，DSH 与 OC 共用）<a class="anchor" href="#s4" aria-label="本节链接">#</a></h2>
+<h3 id="s5">2.1 安装<a class="anchor" href="#s5" aria-label="本节链接">#</a></h3>
+<pre><code class="language-powershell">npm i -g dsh-router-laya        # 全局副本：venv 和权重都落在它里面
+</code></pre>
+<p>包目录（下文记作 <code>&lt;svc&gt;</code>）：</p>
+<pre><code>%APPDATA%\npm\node_modules\dsh-router-laya
+├─ .venv-router\        # Python venv（setup 建）
+├─ weights\model\       # 842 MB checkpoint（setup 下）
+├─ service\             # laya_router.py / finetuned_judge.py / intent_parser.py / laya\
+└─ bin\setup.mjs        # 引导脚本
+</code></pre>
+<h3 id="s6">2.2 建 venv（<strong>必须手动</strong>，因为 setup 有个 bug）<a class="anchor" href="#s6" aria-label="本节链接">#</a></h3>
+<p><code>bin/setup.mjs</code> 第 122 行会崩：<code>TypeError: probe.base is not iterable</code> ——
+<code>probePython()</code> 返回的对象没有 <code>base</code> 字段，但 <code>stepA()</code> 会去展开它。<strong>首次运行必崩</strong>，所以先手动把 venv 建好，setup 就会跳过那段：</p>
+<pre><code class="language-powershell">$svc = &quot;$env:APPDATA\npm\node_modules\dsh-router-laya&quot;
+python -m venv &quot;$svc\.venv-router&quot;
+&amp; &quot;$svc\.venv-router\Scripts\python.exe&quot; -m pip install -r &quot;$svc\service\requirements.lock.txt&quot;
+</code></pre>
+<blockquote>
+<p>依赖：<code>torch==2.14.0+cpu</code>（走 PyTorch CPU 源，约 124 MB）、<code>transformers</code>、<code>safetensors</code>、<code>numpy</code> 等。
+<strong>机器 B 实测补充（2026-10-07）</strong>：</p>
+</blockquote>
+<ul>
+<li><code>probe.base is not iterable</code> <strong>在 2.2.0 仍然存在</strong>（<code>probePython()</code> 返回 <code>{version, exe, major, minor}</code> 没有 <code>base</code>，<code>stepA()</code> 第 122 行却展开 <code>...probe.base</code>）——&quot;手动建 venv&quot;的结论继续有效。</li>
+<li><strong>venv 位置要短</strong>：npm 全局 prefix 若在深路径（本机 WinGet Node：<code>…\WinGet\Packages\OpenJS.NodeJS.LTS_…\node-v24.19.0-win-x64</code>，约 120 字符），包内建 venv 会让 pip 装 sympy 等深层包报 <code>[WinError 206] 文件名或扩展名太长</code>（突破 MAX_PATH 260）。对策：venv 放<strong>短路径</strong>（本次 <code>C:\Users\&lt;user&gt;\.dsh-router-laya\venv</code>），一切引用用全路径；<code>start_router.ps1</code> 通过 <code>$env:LAYA_PYTHON</code> 找到它（见 §2.4）。</li>
+<li><strong>DLP 环境</strong>（天锐绿盾 / IP-guard 等透明加密）：<code>npm i -g</code> 解包后 <code>service/requirements.lock.txt</code> 可能被加密并改名 <code>requirements.lock.txt.IPGSD</code>（首字节 <code>%TSD-Header</code>），PS/python 都读不到原文。对策——从 npm tarball 提原文：</li>
+</ul>
+<pre><code>npm pack dsh-router-laya --pack-destination $env:TEMP
+# python 读 tar 成员 package/service/requirements.lock.txt -&gt; 写成 requirements.lock.md
+#（.md 不在加密名单；pip 不挑扩展名）：
+#   venv\Scripts\python.exe -m pip install -r service\requirements.lock.md
+</code></pre>
+<h3 id="s7">2.3 取 846 MB 权重<a class="anchor" href="#s7" aria-label="本节链接">#</a></h3>
+<p><strong>先别直接用 <code>node weights/fetch.mjs</code></strong> —— 在这台机器的网络上单流会在大约 10 MB 处被掐断（<code>terminated</code>）。
+而且 HF 兜底也没用：<code>huggingface.co</code> 返回 <strong>401</strong>、<code>hf-mirror.com</code> 返回 <strong>404</strong>，只有 GitHub Release 有货。</p>
+<p>用<strong>分块 Range + 逐块重试</strong>的脚本（全文见附录 A）：</p>
+<pre><code class="language-powershell">node &quot;$env:TEMP\fetch-laya-chunked.mjs&quot;
+</code></pre>
+<ul>
+<li>目标：<code>&lt;svc&gt;\weights\model\model.safetensors</code>，<strong>842,609,220 字节</strong></li>
+<li>sha256 必须等于 <code>f14cf869ebc4d0adab3102627a92f0b677678d05e5353e3e55dc11f4fc6172de</code>（脚本自己校验）</li>
+<li>实测 2–6 MB/s，约 3–7 分钟</li>
+</ul>
+<blockquote>
+<p>也可以反复跑官方的 <code>node weights/fetch.mjs</code>：它按 <code>.part</code> 续传，每次推进约 10 MB —— 能成，但要跑几十次，不推荐。
+<strong>机器 B 网络实测（2026-10-07）</strong>：</p>
+</blockquote>
+<ul>
+<li>源可达性同样是&quot;只有 GitHub Release 能用&quot;：<code>huggingface.co</code> 连接被重置、<code>hf-mirror.com</code> 404；github.com 能通但<strong>间歇抽风</strong>（连续几个请求连接超时，随后又通）。</li>
+<li>单流实测仅 ~3.7 MB/min（0.06 MB/s）→ 换<strong>并发分块</strong>：2 MiB 块 + 6 worker 抢队列 + 位置写 + <code>chunks.json</code> 断点，实测 <strong>~43 MB/min（0.7 MB/s，12 倍）</strong>，19 分钟下完（脚本见附录 A 的 v3 版）。</li>
+<li>并发数怎么定：先并行跑 4 条 <code>curl -r</code> 测<strong>总吞吐</strong>（本机单连接方差极大：29 KB/s ~ 573 KB/s），4 条总和远大于单条再上并发。</li>
+</ul>
+<h3 id="s8">2.4 起服务并验收<a class="anchor" href="#s8" aria-label="本节链接">#</a></h3>
+<pre><code class="language-powershell">node &quot;$svc\bin\setup.mjs&quot; setup --skip-weights    # step a 跳过、c 打印配置行、d 起服务
+curl.exe http://127.0.0.1:8765/health             # 期待 protocol=finetuned
+</code></pre>
+<p>冷启动约 <strong>40 秒</strong>（载入 842 MB checkpoint），之后常驻内存约 <strong>1.9 GB</strong>。</p>
+<p><strong>如果 step d 报 <code>start_router.ps1 is not recognized</code></strong>：那是杀软/安全策略把 <code>service\start_router.ps1</code> 删了（<code>.sh</code> 孪生文件不会）。这个文件<strong>不是必需的</strong> —— DSH 插件与 OC 插件都会直接用 python 起服务。手动等价命令：</p>
+<pre><code class="language-powershell">&amp; &quot;$svc\.venv-router\Scripts\python.exe&quot; &quot;$svc\service\laya_router.py&quot; --http --port 8765
+</code></pre>
+<h3 id="s9">2.5 随手测一下判定是否正常<a class="anchor" href="#s9" aria-label="本节链接">#</a></h3>
+<pre><code class="language-powershell">$body = &#39;{&quot;task&quot;:&quot;分析这个并发 bug 的根因，并给出跨模块的重构方案&quot;,&quot;prev_tier&quot;:null,&quot;prev_task&quot;:null,&quot;session_id&quot;:&quot;probe&quot;}&#39;
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8765/judge -ContentType application/json -Body $body |
+  Select-Object tier, triggered_by, ms          # 期待 max / laya / ~1.4s
+</code></pre>
+<h3 id="s10">2.6 安装期头号坑：torch <code>WinError 1114</code>（系统 VC 运行库过旧）<a class="anchor" href="#s10" aria-label="本节链接">#</a></h3>
+<p><strong>症状</strong>：服务起不来，<code>%TEMP%\laya-router-service.err.log</code> 尾部：</p>
+<pre><code>OSError: [WinError 1114] 动态链接库(DLL)初始化例程失败。
+Error loading &quot;…\torch\lib\c10.dll&quot; or one of its dependencies.
+</code></pre>
+<p><strong>快速确诊两步</strong>（分清&quot;文件坏&quot;还是&quot;初始化失败&quot;）：</p>
+<ol>
+<li>datafile 模式能加载 ⇒ PE 完好，挂在 DllMain：
+<code>python -c &quot;import ctypes; k=ctypes.WinDLL(&#39;kernel32&#39;,use_last_error=True); print(k.LoadLibraryExW(r&#39;…\torch\lib\c10.dll&#39;,None,2))&quot;</code>（非 0 = 映射成功）</li>
+<li><code>pefile</code> 解析 c10.dll 导入表：依赖全在系统（<code>MSVCP140 / VCRUNTIME140 / VCRUNTIME140_1 / dbghelp / api-ms-win-crt-*</code>）⇒ 不是缺文件，是<strong>版本太旧</strong>（机器 B 系统还是 2021 年的 14.29，torch 2.14 需要 ≥14.40 的 <code>msvcp140</code>）。</li>
+</ol>
+<p><strong>修复（免管理员）：每应用部署新版 runtime</strong>——<code>pip download msvc-runtime --no-deps</code> 拿到的 wheel 里就有整套（机器 B 用的 14.44）：</p>
+<ol>
+<li>解包 wheel，把 <code>msvcp140*.dll / vcruntime140*.dll / concrt140.dll</code> 等复制到 <strong><code>&lt;venv&gt;\Scripts\</code>**（python.exe 所在&quot;应用目录&quot;）**和** **<code>&lt;svc&gt;\torch\lib\</code></strong>（CPython 以 <code>LOAD_WITH_ALTERED_SEARCH_PATH</code> 加载扩展，c10 的隐式依赖优先搜它自己的目录）；</li>
+<li><strong>新进程</strong>里验证：<code>&lt;venv&gt;\Scripts\python.exe -c &quot;import torch; print(torch.__version__)&quot;</code>；</li>
+<li>脚本全文见<strong>附录 F</strong>（<code>msvc-fix.py</code>）。</li>
+</ol>
+<blockquote>
+<p>为什么两个目录都要放：<code>vcruntime140</code> 在 python 启动时就被加载了，只放 <code>torch\lib</code> 改不了它——但 <code>venv\Scripts</code> 是 python.exe 自身依赖搜索的第一站，从源头换掉；<code>msvcp140</code> 此时还没被任何模块加载，<code>torch\lib</code> 的新版即可命中。</p>
+</blockquote>
+<hr>
+<h2 id="s11">3. DSH 侧接入<a class="anchor" href="#s11" aria-label="本节链接">#</a></h2>
+<h3 id="s12">3.1 装 loader 副本<a class="anchor" href="#s12" aria-label="本节链接">#</a></h3>
+<p><strong>先判本机形态</strong>——两条路互斥，走错会出现「重复 loader id」或「插件根本没挂上」：</p>
+<pre><code class="language-powershell">Get-Command dsh                       # 有 CLI → 走 (a)；没有 → 走 (b)
+$env:DSH_HOME; $env:DSH_PROFILE_DIR; $env:DSH_PROFILE   # 运行中的 harness 会自报家目录/profile（机器 B：web）
+</code></pre>
+<p><strong>(a) 有 <code>dsh</code> CLI（原文机器 A 的路径）</strong></p>
+<pre><code class="language-powershell">dsh plugin --profile &lt;profile&gt; add dsh-router-laya
+</code></pre>
+<p>它做两件事：把包放进 <code>&lt;DSH_HOME&gt;/profiles/&lt;profile&gt;/node_modules/</code>，并把 <code>dsh-router-laya</code> 写进 profile <code>package.json</code> 的 <code>dsh.profile.bundles</code>（于是包自带的 <code>cordis.patch.yml</code> 会自动 insert 一行 <code>router-laya</code>）。
+⚠️ 这时<strong>绝对不要</strong>再手写 <code>- insert: [- id: router-laya …]</code> —— 重复 loader id 会让 profile <strong>起不来</strong>（作者在包里专门警示过）；要改配置只用 §3.2 的 id-targeted 覆盖写法。</p>
+<p><strong>(b) 没有 CLI（机器 B 实测路径：DSH Desktop 的 <code>web</code> profile）</strong></p>
+<p>DSH Desktop 的 profile 由 Electron 托管，命令行进不去；用包自带的 <code>install.mjs</code> 把 4 个文件复制进 profile 的 <code>node_modules</code>（<code>@deepseek-ai/schemastery</code> 这类 peer 由 Desktop 的 host-module-fallback 兜底解析），<strong>不动</strong> <code>dsh.profile.bundles</code>，配置写在 §3.2 的<strong>手写插入行</strong>里：</p>
+<pre><code class="language-powershell">$svc  = &quot;$((npm prefix -g))\node_modules\dsh-router-laya&quot;      # 机器 B 在 WinGet Node 深路径下
+$prof = &quot;$env:APPDATA\dsh-desktop\harness\profiles\web&quot;        # 等于 $env:DSH_PROFILE_DIR
+node &quot;$svc\install.mjs&quot; &quot;$prof\node_modules&quot;
+</code></pre>
+<p>判据（两条路都适用）：<code>Select-String -Path &quot;$prof\cordis.patch.yml&quot; -Pattern &#39;id: router-laya&#39;</code> 只应命中<strong>一处</strong>插入行；<code>dsh.profile.bundles</code> 里<strong>不应</strong>出现 <code>dsh-router-laya</code>（走 (b) 时）。</p>
+<blockquote>
+<p>📌 profile 的 <code>node_modules</code> 由 pnpm 管理：走 (b) 复制的这个未登记副本，可能在后续 <code>pnpm install</code> / 插件市场装包时被清掉（芯片突然消失）。重跑上面那条 <code>install.mjs</code> 即可（幂等）。</p>
+</blockquote>
+<h3 id="s13">3.2 写 profile 补丁层<a class="anchor" href="#s13" aria-label="本节链接">#</a></h3>
+<p>编辑 <code>&lt;DSH_HOME&gt;\profiles\&lt;profile&gt;\cordis.patch.yml</code>（机器 B：<code>%APPDATA%\dsh-desktop\harness\profiles\web\cordis.patch.yml</code>），追加：</p>
+<pre><code class="language-yaml"># 走 3.1(b)（没有 dsh CLI）时用手写插入行：id 必须叫 router-laya，name 必须是包名。
+- insert:
+    - id: router-laya
+      name: &#39;dsh-router-laya&#39;
+      config:
+        auto: true
+        mode: auto
+        autoStart: true
+        servicePython: &#39;&lt;venv&gt;\Scripts\python.exe&#39;      # 机器 B：C:\Users\&lt;user&gt;\.dsh-router-laya\venv\Scripts\python.exe
+        serviceScript: &#39;&lt;svc&gt;\service\laya_router.py&#39;   # &lt;svc&gt; = npm prefix -g + \node_modules\dsh-router-laya
+        tiers:                       # ← 必写！否则走 DeepSeek 官方通道计费（见下）
+          low:      { provider: example-provider, model: example-model, effort: low }
+          high:     { provider: example-provider, model: example-model, effort: high }
+          max:      { provider: example-provider, model: example-model, effort: max }
+          fallback: { provider: example-provider, model: example-model, effort: low }
+        routes:                      # judge 模式用（顺手覆盖掉未注册的 qwen 槽位）
+          easy:     { provider: example-provider, model: example-model, effort: low }
+          medium:   { provider: example-provider, model: example-model, effort: low }
+          hard:     { provider: example-provider, model: example-model, effort: high }
+          fallback: { provider: example-provider, model: example-model, effort: low }
+</code></pre>
+<blockquote>
+<p><strong>走 3.1(a)（有 <code>dsh</code> CLI，包已进 <code>dsh.profile.bundles</code>）时，把上面 <code>- insert:</code> 与 <code>- id: router-laya</code> 两行换成 id-targeted 覆盖写法</strong>（其余 <code>config:</code> 原样）：</p>
+<pre><code class="language-yaml">- id: router-laya
+  name: &#39;dsh-router-laya&#39;
+  config:
+    …同上…
+</code></pre>
+<p>二者<strong>只能选一种</strong>：包自带 patch 已经会插入 <code>router-laya</code>，你再手写一个 insert 就是重复 id。</p>
+</blockquote>
+<p><strong><code>provider</code> / <code>model</code> 以本机 <code>cordis.patch.yml</code> 里已注册的为准</strong>：机器 A 是 <code>example-provider</code> / <code>example-model</code>；机器 B 是内网网关 provider <code>example-provider</code> / <code>example-model</code>（<code>reasoningEfforts: off/low/high/max</code>）。先看本机 profile 里 <code>- id: llm-pi-ai</code> 那段的 provider 名与模型 id，别照抄别的机器。</p>
+<p>加载器会<strong>热应用</strong>它（无需重启）：插件随即自己 <code>detach</code> 拉起判定服务（<code>harness.log</code> 里出现 <code>[router-laya] auto tier per turn; tiers low=… high=… max=…</code> 即挂载成功）。</p>
+<blockquote>
+<p>🔴 <strong><code>tiers</code> 必须覆盖，否则扣的是 DeepSeek 官方余额。</strong>
+插件内置的 <code>TIER_TABLE</code>（<strong>auto 模式实际使用</strong>）和 <code>ROUTE_TABLE</code>（judge 模式）里，<code>low/high/max/fallback</code> <strong>全部指向 <code>deepseek-official</code></strong> —— 那是 DSH 的官方通道，按你登录的 DeepSeek 账号结算；<code>hard</code> 还指向未注册的 <code>qwen-token-plan-cn</code>。
+插件是<strong>合并</strong>而非替换（<code>const tiers = { ...TIER_TABLE, ...(cfg.tiers || {}) }</code>），所以把四个键给全，就没有任何路径会落到官方通道。
+档位值须在该 provider 的 <code>reasoningEfforts</code> 白名单内：机器 A 的 <code>example-provider</code> 有 <code>low/medium/high/xhigh/max</code>、<strong>没有 <code>off</code>/<code>none</code></strong>（发 <code>none</code> 会 400）；机器 B 的 <code>example-provider</code> 有 <code>off/low/high/max</code>。
+只开 OC 的话<strong>没有这个问题</strong> —— 见 §4.6。</p>
+</blockquote>
+<h3 id="s14">3.3 芯片读不到数据？打 CORS 补丁（<strong>桌面端必做</strong>）<a class="anchor" href="#s14" aria-label="本节链接">#</a></h3>
+<p><strong>症状</strong>：输入栏芯片一直显示 <code>AUTO · 待判定</code>（或 <code>离线</code>），但 <code>/health</code>、<code>/judge</code> 一切正常。</p>
+<p><strong>根因</strong>：桌面端 GUI 的页面 Origin 是 Electron 自定义协议 <strong><code>dsh-app://app</code></strong>，而 <code>service/laya_router.py</code> 的 <code>_cors()</code> 白名单只放行 <code>http://127.0.0.1:*</code> 和 <code>http://localhost:*</code> —— 响应被浏览器按跨源规则丢弃，芯片永远读不到 <code>/state</code>。</p>
+<p><strong>补丁</strong>（不是通配符，普通网页依旧无权限）：</p>
+<pre><code class="language-python"># service/laya_router.py  →  Handler._cors()
+allowed = origin is not None and (
+    origin.startswith(&quot;http://127.0.0.1:&quot;)
+    or origin.startswith(&quot;http://localhost:&quot;)
+    or origin.startswith(&quot;dsh-app://&quot;)        # ← 加这一条（Electron 桌面端）
+)
+</code></pre>
+<p>想确认实际 Origin，可以顺便加一行只打一次的诊断（<strong>注意必须写 stderr</strong>：插件 spawn 服务时 stdout 是 <code>ignore</code>，写 stdout 什么也看不到）：</p>
+<pre><code class="language-python">if origin is not None and origin not in seen_origins:
+    seen_origins.add(origin)
+    print(f&quot;[cors] origin {origin!r} allowed={allowed}&quot;, file=sys.stderr, flush=True)
+</code></pre>
+<p><strong>机器 B 实测（2026-10-07）</strong>：桌面端实际发出的 Origin 两种都出现过 —— <code>http://127.0.0.1:43129</code>（web 载体的页面）与 <code>dsh-app://app</code>（Electron 壳）。补丁后逐个验：</p>
+<pre><code class="language-powershell">foreach ($o in &#39;dsh-app://app&#39;,&#39;http://127.0.0.1:43129&#39;,&#39;https://evil.example&#39;) {
+  (Invoke-WebRequest &#39;http://127.0.0.1:8765/state&#39; -Headers @{ Origin = $o } -UseBasicParsing).Headers[&#39;Access-Control-Allow-Origin&#39;]
+}
+# 期待：前两个回显自身，第三个为空 —— 仍是白名单，不是通配符
+</code></pre>
+<blockquote>
+<p>⚠️ <code>_cors()</code> 是<strong>服务进程里的代码</strong>：改完文件必须<strong>重启判定服务</strong>才生效（先 <code>netstat -ano | findstr :8765</code> 找到监听者杀掉，再由插件 / <code>start_router.ps1</code> 重新拉起）。只改文件不重启 = 没改。</p>
+</blockquote>
+<h3 id="s15">3.4 验收<a class="anchor" href="#s15" aria-label="本节链接">#</a></h3>
+<p><strong>(1) 服务层</strong></p>
+<pre><code class="language-powershell">Invoke-RestMethod http://127.0.0.1:8765/health        # protocol 必须是 finetuned
+netstat -ano | findstr :8765                          # 只应有 1 个 LISTENING（多实例问题见 §4.2）
+</code></pre>
+<p><strong>(2) 插件挂载层</strong>（<code>harness.log</code>）</p>
+<pre><code class="language-powershell">Get-Content &quot;$env:APPDATA\dsh-desktop\logs\harness.log&quot; | Select-String &#39;\[router-laya\]&#39;
+# 期待：auto tier per turn; tiers low=… high=… max=… fallback=…
+#   ＋  judge service: already up / started (…python.exe)
+</code></pre>
+<p><strong>(3) 接口层</strong> —— <code>/router-laya/mode</code> 是<strong>同源路由</strong>，端口就是本机 web 载体（机器 B <code>43129</code>，机器 A <code>19387</code>），token 在 <code>harness.log</code> 的 <code>dsh web:</code> 行里：</p>
+<pre><code class="language-powershell">$tok = (Get-Content &quot;$env:APPDATA\dsh-desktop\logs\harness.log&quot; |
+        Select-String &#39;dsh web: http://127.0.0.1:\d+/\?token=&#39; | Select-Object -Last 1).Line -replace &#39;.*token=&#39;,&#39;&#39;
+Invoke-RestMethod &quot;http://127.0.0.1:43129/router-laya/mode?token=$tok&quot;    # 期待 {&quot;mode&quot;:&quot;auto&quot;,&quot;writable&quot;:true}
+Invoke-RestMethod http://127.0.0.1:8765/state                             # 看到刚发那条消息的判定行 = 全链路通
+</code></pre>
+<p><strong>(4) 芯片层</strong> —— 启动图里必须有这个包（新开/刷新窗口后生效）：</p>
+<pre><code class="language-powershell">(Invoke-WebRequest &quot;http://127.0.0.1:43129/?token=$tok&quot; -UseBasicParsing).Content -like &#39;*dsh-router-laya/client.js*&#39;
+</code></pre>
+<p>芯片文案对照：<code>离线</code> = 连不上服务；<code>待判定</code> = 连上了但本轮还没结果；<code>低/高/MAX</code> = 已路由。</p>
+<blockquote>
+<p>⚠️ 三个容易误判的点（机器 B 实测）：</p>
+<ol>
+<li><strong>刚挂载完不会立刻按文本判定</strong>：任务文本是在 <code>agent/inbox/claimed</code> 时抓的；插件挂载前就已领取的那一轮没有文本，日志会出现 <code>turn N auto &quot;(no task text captured)&quot; -&gt; judge unreachable -&gt; fallback … effort=low</code>。<strong>下一轮</strong>才是真判定（<code>turn N auto &quot;…&quot; -&gt; max (laya)</code>）。</li>
+<li><strong>芯片要刷新窗口</strong>：启动图（<code>__DSH_BOOT__</code>）是页面加载时组合的，热挂载的插件不会自己出现在已打开的旧页面里。</li>
+<li><strong>热插入后的第一次 <code>mode</code> 读数可能是 <code>manual</code></strong>（瞬时态，路由会被 <code>isManual()</code> 挡住）：POST <code>{&quot;mode&quot;:&quot;auto&quot;}</code>（或在芯片上点一下）即可；改一行配置让插件重新 apply 后读数稳定为 <code>auto</code>。</li>
+</ol>
+</blockquote>
+<hr>
+<h2 id="s16">4. OpenCode 侧接入<a class="anchor" href="#s16" aria-label="本节链接">#</a></h2>
+<p>判定大脑复用同一个 8765 服务，<strong>不需要装 npm 的 loader 副本</strong>。</p>
+<h3 id="s17">4.1 放插件<a class="anchor" href="#s17" aria-label="本节链接">#</a></h3>
+<p>把 <code>router-laya.js</code> 放到<strong>本机的全局插件目录</strong>（OC 启动时才加载 → 改完必须重启 OC）。</p>
+<blockquote>
+<p>⚠️ <strong>目录名与导出形式都以本机实际为准</strong>（放错目录 = 插件静默不加载，日志里连 <code>init</code> 行都不会有）：</p>
+<ul>
+<li>目录：机器 A 是 <code>~/.config/opencode/plugins/</code>（复数）；<strong>机器 B 实测是 <code>~/.config/opencode/plugin/</code>（单数）</strong>。判定法：看现有插件的所在目录（如 <code>dir ~/.config/opencode/plugin*</code>）。</li>
+<li>导出：机器 B 的 opencode 用 <code>export default async ({ client }) =&gt; ({ …hooks })</code>（与该机既有插件一致）；机器 A 版是 named export。以本机既有插件写法为准。</li>
+</ul>
+</blockquote>
+<pre><code>~/.config/opencode/plugin/router-laya.js       # 全文见附录 C（含 autostart 的完整版）
+</code></pre>
+<h3 id="s18">4.2 判定服务由谁拉起（<strong>OC 自启动，不依赖 DSH</strong>）<a class="anchor" href="#s18" aria-label="本节链接">#</a></h3>
+<p>OC 插件默认 <code>AUTOSTART</code>（<code>ROUTER_LAYA_AUTOSTART</code> 未设即视为开），两个触发点：</p>
+<ol>
+<li><strong>插件加载时</strong>（off the request path）：<code>void healthUp().then(up =&gt; { if (!up) startJudge() })</code></li>
+<li><strong>每轮请求时</strong>：判定服务不可达 → 先 <code>startJudge()</code>，本轮走 fail-safe（保持你自己的模型配置，不乱降级）</li>
+</ol>
+<pre><code class="language-js">const SERVICE_PYTHON = process.env.ROUTER_LAYA_PYTHON ?? join(process.env.APPDATA, &quot;npm&quot;,&quot;node_modules&quot;,&quot;dsh-router-laya&quot;,&quot;.venv-router&quot;,&quot;Scripts&quot;,&quot;python.exe&quot;)
+const SERVICE_SCRIPT = process.env.ROUTER_LAYA_SCRIPT ?? join(process.env.APPDATA, &quot;npm&quot;,&quot;node_modules&quot;,&quot;dsh-router-laya&quot;,&quot;service&quot;,&quot;laya_router.py&quot;)
+const SPAWN_COOLDOWN_MS = 60 * 1000   // 拉起失败后 60 s 内不重试
+
+const child = spawn(SERVICE_PYTHON, [SERVICE_SCRIPT, &quot;--http&quot;, &quot;--port&quot;, JUDGE_PORT], {
+  detached: true, windowsHide: true, stdio: &quot;ignore&quot;,
+})
+child.unref()
+</code></pre>
+<p>要点：</p>
+<ul>
+<li><p><strong>单实例、跨 harness 共享</strong>：DSH 插件与 OC 插件用的是同一个 <code>127.0.0.1:8765</code>。⚠️ <strong>「重复启动会 EADDRINUSE 自然去重」在 Windows 上不成立</strong>（2026-10-07 机器 B 实测改正）：<code>HTTPServer</code> 默认 <code>allow_reuse_address = 1</code>（<code>SO_REUSEADDR</code>），第二个进程<strong>能绑上同一端口</strong>，连 <code>netstat</code> 都能看到多个 LISTENING —— 必须靠服务端<strong>单实例闸门</strong>兜底（下一段 + §6）。</p>
+</li>
+<li><p><strong>detached + unref</strong>：OC 退出后服务继续跑 → 通常一辈子只冷启动一次。</p>
+</li>
+<li><p><strong><code>stdio: &quot;ignore&quot;</code></strong>：由 OC 拉起时服务<strong>不写日志</strong>；只有 DSH 插件拉起才写 <code>%TEMP%\laya-router-service.log</code>（排查服务本身时注意这点）。</p>
+</li>
+<li><p><strong>冷启动窗口</strong>（约 40 s，慢时 3 min）：这段时间每轮都 fail-safe 丢档，日志会连续出现：</p>
+<pre><code>judge down -&gt; spawned: …python.exe …laya_router.py --http --port 8765
+judge unavailable (fetch failed) -- leaving the request untouched
+</code></pre>
+<p>这是<strong>预期行为</strong>、不是插件失效；服务起来后自动恢复判定。想去掉这个窗口见<strong>附录 E：可选预热</strong>。</p>
+</li>
+<li><p>结论：<strong>只开 OC 也完全可用</strong>，预热只影响冷启动那几分钟的档位质量。
+<strong>机器 B 实测补充</strong>：最终版插件的 <code>SERVICE_PYTHON / SERVICE_SCRIPT</code> 改为<strong>候选探测</strong>（<code>ROUTER_LAYA_PYTHON/SCRIPT</code> env → <code>~/.dsh-router-laya/venv</code> → 包内 <code>.venv-router</code>），因为机器 B 的包不在 <code>%APPDATA%\npm</code>、venv 也不在包内（见附录 C）。另：本次在维护窗口<strong>手动起过一次服务</strong>，随后插件加载时 <code>healthUp()</code> 直接命中 → 不 spawn、零冷启动窗口（<code>%TEMP%\router-laya-oc.spawn</code> 为空可证）。</p>
+</li>
+</ul>
+<blockquote>
+<p><strong>机器 B 实测补充 2（单实例闸门，2026-10-07）</strong>：只靠 EADDRINUSE「去重」会出事。实测 OC 插件在判定超时后每 60 s 拉起一个新服务，<code>netstat</code> 里一度有 <strong>4 个 <code>127.0.0.1:8765</code> LISTENING</strong>（各 hold 842 MB 模型，可用内存从 5 GB 掉到 <strong>1.0 GB</strong>），越慢越拉、越拉越慢。修法 = 服务端<strong>命名互斥体闸门</strong>，且必须放在<strong>加载 checkpoint 之前</strong>（否则照样吃满内存）：</p>
+<pre><code class="language-python">def _claim_single_instance(port):
+    if os.name != &quot;nt&quot;: return None
+    import ctypes; from ctypes import wintypes
+    k = ctypes.WinDLL(&quot;kernel32&quot;, use_last_error=True)
+    k.CreateMutexW.restype = wintypes.HANDLE
+    k.CreateMutexW.argtypes = [wintypes.LPVOID, wintypes.BOOL, wintypes.LPCWSTR]
+    ctypes.set_last_error(0)
+    h = k.CreateMutexW(None, False, &quot;dsh-router-laya-service-%d&quot; % int(port))  # 名字里别带反斜杠
+    if not h: return None
+    if ctypes.get_last_error() == 183:          # ERROR_ALREADY_EXISTS
+        print(&quot;[single-instance] another router already owns 127.0.0.1:%d -- exiting&quot; % int(port),
+              file=sys.stderr, flush=True)
+        sys.exit(0)
+    return h                                     # 进程活着就一直持有，退出即由内核释放
+</code></pre>
+<p>在 <code>http_serve()</code> 里紧跟 <code>_log_lock = _threading.Lock()</code> 之后调用：<code>_instance_guard = _claim_single_instance(port)</code>。
+反证法验收：先起一个，再手工起第二个 → 第二个在读 checkpoint <strong>之前</strong>退出并打印上面那行，<code>netstat</code> 始终 1 个 LISTENING；可用内存回到 4.4 GB，判定回到 5–6 s/轮。
+⚠️ 纯名字（不带 <code>Local\</code> 前缀）就是**当前会话**的 Local 命名空间，两个 harness 在同一登录会话里，够用；写 <code>&quot;Local\\…&quot;</code> 时注意转义（写成 4 个反斜杠会让 <code>CreateMutexW</code> 直接失败并被静默吞掉）。</p>
+</blockquote>
+<h3 id="s19">4.3 语义：picker 就是开关<a class="anchor" href="#s19" aria-label="本节链接">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>composer 的档位下拉</th>
+<th>行为</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Default</strong>（实测传空值）</td>
+<td><strong>AUTO</strong>：判定服务决定本轮档位（每轮 +~1.3 s）</td>
+</tr>
+<tr>
+<td>任意具体档位（low/medium/high/xhigh/max）</td>
+<td><strong>手选优先</strong>：插件完全不干预，连判定都不调（~1 ms）</td>
+</tr>
+</tbody></table>
+<p>逃生开关：<code>ROUTER_LAYA_RESPECT_EXPLICIT=0</code> 退回&quot;总是路由&quot;；<code>ROUTER_LAYA=0</code> 全关。</p>
+<h3 id="s20">4.4 两个运行时开关（<strong>不用重启</strong>）<a class="anchor" href="#s20" aria-label="本节链接">#</a></h3>
+<pre><code class="language-powershell">&quot;manual&quot; | Out-File -Encoding ascii &quot;$env:TEMP\router-laya-oc.mode&quot;   # 全面旁路；删文件即恢复
+&quot;low&quot;    | Out-File -Encoding ascii &quot;$env:TEMP\router-laya-oc.probe&quot;  # 强制档位（A/B 验证用）；删文件即恢复
+</code></pre>
+<h3 id="s21">4.5 验收<a class="anchor" href="#s21" aria-label="本节链接">#</a></h3>
+<p><strong>① 看日志</strong>（<code>%TEMP%\router-laya-oc.log</code>）：</p>
+<pre><code>init pid=… judge=http://127.0.0.1:8765/judge … respectExplicit=true toast=true
+message session=ses_… variant=(default) -&gt; AUTO turn=1 text=&quot;…&quot;
+route   session=ses_… turn=1 -&gt; low (changed) (laya, 1326ms) model=provider/example-model
+cached  session=ses_… turn=1 -&gt; low                     ← 同一回合后续 LLM 调用，不重复判定
+message session=ses_… variant=max -&gt; MANUAL (hands off) turn=2
+session=ses_… turn=2: picker pinned &#39;max&#39; -- hands off   ← 手选档位，1ms 放行
+</code></pre>
+<p><strong>② 验&quot;档位真的生效&quot;</strong>（关键，别省）：</p>
+<p>用一个<strong>会报 reasoning token 的模型</strong>（实测 <code>provider/example-model</code> 会；<code>example-model</code> 恒为 0，不能用来验）：</p>
+<ol>
+<li>probe 写 <code>low</code> → 发一句固定的话（例：<code>分析一下快速排序和归并排序在工程上的取舍</code>）</li>
+<li>probe 改 <code>max</code> → 发<strong>同一句</strong></li>
+<li>用附录 B 的脚本读 OC 消息库，比较 <code>tokens.reasoning</code></li>
+</ol>
+<p>本次实测：<strong><code>low</code> → reasoning 0 / 63.0 s；<code>max</code> → reasoning 1034 / 86.4 s</strong> —— 同一 prompt 差三个数量级，证明档位确实落到了上游请求。
+<strong>机器 B 实测补充</strong>：</p>
+<ul>
+<li>本机模型 <code>provider/example-model</code> <strong>会</strong>上报 reasoning（&quot;deepseek 系恒为 0&quot;不成立于该供应商）：重启后首轮判定 <code>high</code> 的回复实测 <strong>reasoning=3084 / 30.9 s</strong>；历史各轮 0~3194 波动，可直接用附录 B 脚本做 A/B 自验。</li>
+<li>判定耗时<strong>随机器差异巨大</strong>（机器 A ~1.4 s，机器 B 4–9 s/轮）。<strong><code>ROUTER_LAYA_TIMEOUT_MS</code> 必须 ≥ 本机判定耗时</strong>：默认 6000 在机器 B 会<strong>每轮超时、全部 fail-safe 丢档</strong>（症状是日志里 <code>judge unavailable (The operation was aborted…)</code> 连成一片，但 <code>/health</code> 正常）。机器 B 调为 <strong>20000</strong>（最终版插件已内置）。</li>
+</ul>
+<blockquote>
+<p>⚠️ <strong>不要用非法值（<code>bogus</code>/未声明的档位）当通道探针</strong>：OC 会把模型没声明的档位值静默过滤掉，请求照样成功，会得到&quot;通道没通&quot;的<strong>假结论</strong>（我在这上面栽过一次）。</p>
+</blockquote>
+<p><strong>③ 验&quot;判定服务本身健康&quot;</strong>（工具别用错）：</p>
+<pre><code class="language-powershell">netstat -ano | findstr :8765                      # 应有 127.0.0.1:8765 LISTENING
+Invoke-RestMethod http://127.0.0.1:8765/health    # 必须 protocol=finetuned
+</code></pre>
+<blockquote>
+<p>⚠️ <strong>在 DSH 沙箱里不要用 <code>Get-NetTCPConnection</code> / WMI 查进程</strong>：会返回<strong>空结果</strong>，让你得出&quot;服务没起来&quot;的<strong>假结论</strong>（我在这上面栽过一次——服务其实一直在跑）。只有 <code>netstat</code> + <code>/health</code> 可靠。
+同理，<strong>从 DSH 沙箱内写 <code>%LOCALAPPDATA%\Temp</code> 会被拒绝</strong>；自测脚本要落盘就写到工作区里，别写 temp。</p>
+</blockquote>
+<p><strong>④ 档位分布自检</strong>（区分&quot;真在判定&quot;和&quot;恒为一档&quot;）：</p>
+<pre><code class="language-powershell">$log = &quot;$env:TEMP\router-laya-oc.log&quot;
+Get-Content $log | Select-String -Pattern &#39;-&gt; (low|high|max)( |$)&#39; -AllMatches |
+  ForEach-Object { $_.Matches } | ForEach-Object { $_.Groups[1].Value } |
+  Group-Object | Sort-Object Count -Descending
+</code></pre>
+<p>本次实测（1049 行日志）：<strong><code>max 383 / high 287 / low 88</code></strong> —— 三档都出现、比例合理，说明判定确实按消息在变。</p>
+<hr>
+<h3 id="s22">4.6 成本安全：这个插件<strong>不会</strong>改 provider/model<a class="anchor" href="#s22" aria-label="本节链接">#</a></h3>
+<p><code>applyTier</code> 只写两个通道（<code>plugins/router-laya.js</code>）：</p>
+<pre><code class="language-js">function applyTier(input, output, tier) {
+  output.options = { ...(output.options ?? {}), reasoningEffort: tier }
+  const message = input?.message
+  if (message !== null &amp;&amp; typeof message === &quot;object&quot;) message.variant = tier
+}
+</code></pre>
+<p><strong>没有 provider / model 字段</strong> —— 它只能改&quot;思考强度&quot;，改不了&quot;用哪个供应商&quot;。所以：</p>
+<ul>
+<li>你在 picker 里选的是 <code>&lt;your-provider&gt;-*</code>，它就永远只在这条线上改档位，<strong>不可能</strong>把流量送去官方 DeepSeek；</li>
+<li>核对方法：日志每行末尾都带 <code>model=&lt;provider&gt;/&lt;model&gt;</code>，直接看是不是你预期的供应商。</li>
+</ul>
+<p>这与 DSH 插件形成对比：DSH 内置路由表点名了 <code>deepseek-official</code>，<strong>必须</strong>用 §3.2 的 <code>tiers</code> 覆盖才安全。OC 移植版没有这个问题。</p>
+<blockquote>
+<p>相关但独立的一个坑（同一次排查中发现）：OC 侧&quot;内置官方 provider 复活&quot;与 router-laya 无关 ——
+① <code>~/.local/share/opencode/auth.json</code> 里的 <code>deepseek</code> 条目；② 用户级环境变量 <code>DEEPSEEK_API_KEY</code>；③ omo 内置 fallback 链里的 <code>providers: [&quot;deepseek&quot;]</code>。
+这三处任一存在都会让 OC 走<strong>官方计费</strong>，且和 router-laya 完全无关。排查成本问题时先清这三处。</p>
+</blockquote>
+<hr>
+<h2 id="s23">5. 排错表<a class="anchor" href="#s23" aria-label="本节链接">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>症状</th>
+<th>根因</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>setup.mjs</code> 抛 <code>probe.base is not iterable</code></td>
+<td>上游 bug（venv 创建分支）</td>
+<td>先手动建 venv（§2.2），setup 会跳过该分支</td>
+</tr>
+<tr>
+<td>权重下到 ~10 MB 就 <code>terminated</code></td>
+<td>单流被网络掐断</td>
+<td>用附录 A 的分块下载器；或反复跑官方 <code>fetch.mjs</code>（续传）</td>
+</tr>
+<tr>
+<td>HF <code>401</code> / hf-mirror <code>404</code></td>
+<td>checkpoint 只在 GitHub Release</td>
+<td>别指望 HF 兜底</td>
+</tr>
+<tr>
+<td><code>start_router.ps1 is not recognized</code></td>
+<td>杀软删了 <code>.ps1</code></td>
+<td>关杀软重装；或直接用 python 起服务（§2.4）</td>
+</tr>
+<tr>
+<td>芯片永远 <code>待判定</code>/<code>离线</code></td>
+<td>桌面端 Origin 是 <code>dsh-app://app</code>，CORS 拦了</td>
+<td>打 §3.3 的 CORS 补丁</td>
+</tr>
+<tr>
+<td>OC 里档位没效果</td>
+<td>只写了 <code>output.options</code>，被钉选的 variant 盖掉</td>
+<td>必须同时写 <code>input.message.variant</code>（附录 C 的 <code>applyTier</code>）</td>
+</tr>
+<tr>
+<td>OC 每次请求判两遍（延迟翻倍）</td>
+<td>OC 为每个实例/上下文各实例化一次插件</td>
+<td>跨实例共享裁决文件（附录 C）</td>
+</tr>
+<tr>
+<td>OC 一轮之内档位自己往上跳</td>
+<td>工具循环里的重复 LLM 调用被当成&quot;用户重试&quot;</td>
+<td>按轮缓存（附录 C）</td>
+</tr>
+<tr>
+<td>改完插件没生效</td>
+<td>OC 只在启动时加载插件</td>
+<td>重启 OC</td>
+</tr>
+<tr>
+<td>日志里 <code>model=provider/undefined</code></td>
+<td>OC 的 <code>Model</code> 字段是 <code>id</code> 不是 <code>modelID</code></td>
+<td>读 <code>input.model.id</code></td>
+</tr>
+<tr>
+<td><code>judge unavailable (fetch failed)</code> 连成一片</td>
+<td>判定服务冷启动中（~40 s–3 min），或拉起被 60 s 冷却挡住</td>
+<td>属预期，起来即恢复；想消掉窗口见附录 E</td>
+</tr>
+<tr>
+<td>服务明明在跑，却查到&quot;没起来&quot;</td>
+<td>在 DSH 沙箱里用了 <code>Get-NetTCPConnection</code>/WMI（<strong>假阴性</strong>）</td>
+<td>改用 `netstat -ano</td>
+</tr>
+<tr>
+<td>日志里 <code>does not declare reasoning -- leaving the request untouched</code></td>
+<td>当前模型 capabilities 未声明 reasoning</td>
+<td>换支持 reasoning 的模型；否则属预期跳过</td>
+</tr>
+<tr>
+<td>档位恒为同一档、从不变化</td>
+<td><code>probe</code> 文件存在（强制档位），或 picker 一直钉着具体档位</td>
+<td>删 <code>%TEMP%\router-laya-oc.probe</code>；picker 调回 Default</td>
+</tr>
+<tr>
+<td><code>/health</code> 能通但判定无效</td>
+<td>起的是 base 协议服务（响应里没有 <code>tier</code> 字段）</td>
+<td>必须是 <code>protocol=finetuned</code> 的那个服务</td>
+</tr>
+<tr>
+<td>DSH 侧改了 <code>tiers</code> 仍走官方通道</td>
+<td>四个档位键没给全 —— 缺任一个都会回落内置表（<code>low/high/max/fallback</code>）</td>
+<td>四个键都写，见 §3.2</td>
+</tr>
+<tr>
+<td>安装：pip 报 <code>[WinError 206] 文件名或扩展名太长</code></td>
+<td>npm 全局包在深路径（WinGet 系），包内 venv 的深路径突破 MAX_PATH</td>
+<td>venv 放短路径（如 <code>~\.dsh-router-laya\venv</code>），全路径引用（§2.2）</td>
+</tr>
+<tr>
+<td>安装：<code>requirements.lock.txt</code> 不见了/变成 <code>.IPGSD</code></td>
+<td>DLP 透明加密把 .txt 加密改名</td>
+<td>从 npm tarball 提原文存 <code>.md</code> 再 pip（§2.2）</td>
+</tr>
+<tr>
+<td>安装：<code>WinError 1114</code> + <code>c10.dll</code> 初始化失败</td>
+<td>系统 VC 运行库过旧（&lt;14.40）</td>
+<td>新版 runtime 部署到 <code>venv\Scripts</code> + <code>torch\lib</code>（§2.6 / 附录 F）</td>
+</tr>
+<tr>
+<td>每轮都 <code>judge unavailable</code>（超时）但 <code>/health</code> 正常</td>
+<td>插件 <code>ROUTER_LAYA_TIMEOUT_MS</code> &lt; 本机判定耗时（慢机）</td>
+<td>调大（机器 B 20000）；先看 <code>/judge</code> 返回的 <code>ms</code>（§4.5）</td>
+</tr>
+<tr>
+<td>日志中文乱码</td>
+<td>PowerShell 控制台按 GBK 显示 UTF-8 文件（文件本身正常）</td>
+<td>用编辑器/VSCode 看；或读前设 <code>[Console]::OutputEncoding</code></td>
+</tr>
+<tr>
+<td>判定连续 <code>judge unavailable</code> + python 进程堆积</td>
+<td>① 单线程 HTTP 服务被并发请求堵住；② 插件把「超时」误判为「服务死亡」反复 spawn（60 s 一次、各加载 842 MB 模型），形成越堵越慢的正反馈</td>
+<td>服务线程化（<code>ThreadingHTTPServer</code> + 推理锁）；插件只在<strong>连接失败且 <code>/health</code> 探测失败</strong>时才拉起；<strong>再加服务端单实例闸门</strong>（否则仍会堆到 4 个，见 §4.2 补充 2 / §6）；清理由 <code>netstat -ano | findstr :8765</code> 找监听者，只留一个，其余 <code>taskkill /PID &lt;pid&gt; /F</code></td>
+</tr>
+<tr>
+<td>多个 842 MB 判定实例、可用内存暴跌（1 GB 级）</td>
+<td>Windows 上 <code>SO_REUSEADDR</code> 让重复拉起<strong>都能绑上 8765</strong>（EADDRINUSE 不生效）</td>
+<td>打单实例闸门（§4.2 补充 2）；应急：<code>netstat -ano | findstr :8765</code> 列出全部监听者，只留 1 个</td>
+</tr>
+<tr>
+<td><code>GET /router-laya/mode</code> 读到 <code>manual</code>，插件不路由</td>
+<td>热插入插件后的瞬时态（settings 平面第一次派生）</td>
+<td>POST <code>{&quot;mode&quot;:&quot;auto&quot;}</code> / 芯片上切一下；改一行配置让插件重新 apply 后稳定（§3.4）</td>
+</tr>
+<tr>
+<td>装了插件但输入栏没有档位芯片</td>
+<td>Web 启动图是页面加载时组合的，旧页面不含新 bundle</td>
+<td>刷新 / 重开 DSH 窗口；启动图里应出现 <code>dsh-router-laya/client.js</code>（§3.4）</td>
+</tr>
+<tr>
+<td><code>/router-laya/mode</code> 404</td>
+<td>插件没挂上：profile 补丁没生效 / <code>name</code> 解析不到包</td>
+<td>先看 <code>harness.log</code> 有没有 <code>[router-laya] auto tier per turn</code>；再查 profile <code>node_modules\dsh-router-laya</code> 是否还在（pnpm 会清）</td>
+</tr>
+<tr>
+<td>PowerShell 探 <code>/judge</code> 得到 <code>tier=low</code> 且 <code>intent.span</code> 全是 <code>?</code></td>
+<td>PS 5.1 的 <code>Invoke-RestMethod -Body &lt;string&gt;</code> 按本地代码页发中文，任务文本被打成 <code>?</code>（服务没问题，是探针的问题）</td>
+<td>body 用 <code>[Text.Encoding]::UTF8.GetBytes($json)</code> 发，<code>-ContentType &#39;application/json; charset=utf-8&#39;</code></td>
+</tr>
+<tr>
+<td><code>harness.log</code> 里插件行只报 <code>(no task text captured)</code></td>
+<td>该轮用户消息在插件挂载<strong>之前</strong>就已领取（<code>agent/inbox/claimed</code> 抓不到历史文本）</td>
+<td>属预期；<strong>下一轮</strong>用户消息即正常判定</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="s24">6. 本地分叉清单（<strong>升级会覆盖，务必记账</strong>）<a class="anchor" href="#s24" aria-label="本节链接">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>改动</th>
+<th>备份</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>&lt;svc&gt;\service\laya_router.py</code></td>
+<td>CORS 白名单加 <code>dsh-app://</code>（+ 每个 Origin 只打一次的 stderr 诊断）</td>
+<td>机器 B：<code>laya_router.py.bak-dsh-app-cors-20261007</code>；机器 A：<code>…cors-20261006</code></td>
+</tr>
+<tr>
+<td><code>&lt;svc&gt;\service\laya_router.py</code></td>
+<td><strong>单实例闸门</strong> <code>_claim_single_instance()</code>（命名互斥体，加载 checkpoint 之前生效）—— 见 §4.2 补充 2</td>
+<td>机器 B：<code>laya_router.py.bak-single-instance-20261007</code></td>
+</tr>
+<tr>
+<td><code>&lt;DSH_HOME&gt;\profiles\&lt;p&gt;\node_modules\dsh-router-laya\</code></td>
+<td>loader 副本（<code>index.js</code> <code>client.js</code> <code>cordis.patch.yml</code> <code>package.json</code>），由包内 <code>install.mjs</code> 复制；<strong>非分叉，但 pnpm 会清掉未登记副本</strong></td>
+<td>重跑 <code>install.mjs</code> 即恢复（§3.1b）</td>
+</tr>
+<tr>
+<td><code>&lt;DSH_HOME&gt;\profiles\&lt;p&gt;\node_modules\dsh-router-laya\client.js</code></td>
+<td>（可选）离线容错 <code>POLL_FAILURES_BEFORE_OFFLINE</code> 2 → 30</td>
+<td><code>router-laya-client.js.orig-20261006</code></td>
+</tr>
+<tr>
+<td><code>&lt;DSH_HOME&gt;\profiles\&lt;p&gt;\cordis.patch.yml</code></td>
+<td>追加<strong>插入行</strong>（无 dsh CLI 时）或 <code>tiers</code>/<code>routes</code> id-targeted 覆盖（<strong>不覆盖会走 DeepSeek 官方计费</strong>，见 §3.2）</td>
+<td>机器 B：<code>cordis.patch.yml.bak-pre-router-laya-20261007</code></td>
+</tr>
+<tr>
+<td><code>~/.config/opencode/plugin/router-laya.js</code></td>
+<td>OC 移植插件（新增，非分叉；目录名以本机为准，见 §4.1）</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>&lt;venv&gt;</code>（机器 B：<code>~\.dsh-router-laya\venv</code>）</td>
+<td>venv 移出包外短路径（避 WinError 206）；<strong>npm 升级不丢</strong></td>
+<td>归档区留 <code>requirements.lock.md</code></td>
+</tr>
+<tr>
+<td><code>&lt;venv&gt;\Scripts\</code> 与 <code>&lt;svc&gt;\torch\lib\</code> 下的 <code>msvc*140*.dll</code> 等</td>
+<td>VC runtime 14.44 每应用部署（修 torch 1114）</td>
+<td>代码在 <code>msvc-fix.py</code>（附录 F），重装 venv/torch 后重跑</td>
+</tr>
+<tr>
+<td>归档区 <code>~\.dsh-router-laya\</code></td>
+<td>权重备份 846 MB + 下载器/修复/验收脚本 + <code>README.md</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>&lt;svc&gt;\service\laya_router.py</code></td>
+<td><strong>线程化补丁</strong>（<code>HTTPServer</code>→<code>ThreadingHTTPServer</code> + <code>_judge_lock</code>/<code>_log_lock</code>）：并发请求不再阻塞 <code>/health</code>，Torch 推理仍串行（2026-10-07）</td>
+<td><code>.bak-20261007-threaded</code>；<strong>npm 升级包会覆盖 → 需重打</strong></td>
+</tr>
+<tr>
+<td><code>&lt;svc&gt;\service\laya_router.py</code></td>
+<td><strong>机器 C 合并补丁</strong>（2026-10-07）：一次性把线程化 + <code>_claim_single_instance()</code> 单实例闸门 打齐（含上面的 CORS 保留）</td>
+<td>机器 C：<code>laya_router.py.bak-threaded-singleinstance-20261007</code></td>
+</tr>
+<tr>
+<td><code>~/.config/opencode/plugins/router-laya.js</code>（机器 C 为<strong>复数</strong> <code>plugins\</code>）</td>
+<td><code>ROUTER_LAYA_TIMEOUT_MS</code> 默认 <strong>6000 → 10000</strong>（本机实测单轮 1.9–4.7 s，并发时叠加，6000 会误杀第 3/4 个并发请求）</td>
+<td>机器 C：改前 15880 字节，源码在指南附录 C（把 20000 改成本机值即恢复）</td>
+</tr>
+</tbody></table>
+<p><code>npm i -g dsh-router-laya</code> 会重新解包，覆盖 <code>&lt;svc&gt;</code> 下的所有补丁（CORS、单实例闸门、线程化）；<code>dsh plugin --profile &lt;p&gt; add/update</code> 或 profile 的 <code>pnpm install</code> 会覆盖 / 清掉 profile 侧的分叉 → <strong>升级后重新打补丁、重新复制 loader、复查 <code>cordis.patch.yml</code></strong>。</p>
+<hr>
+<h2 id="s25">附录 A：权重下载器（<code>fetch-laya-chunked.mjs</code>）<a class="anchor" href="#s25" aria-label="本节链接">#</a></h2>
+<blockquote>
+<p><strong>v3（并发版，推荐）</strong>：机器 B 实测 6 并发抢块 <strong>~43 MB/min</strong>，19 分钟下完 842 MB；同机单流只有 ~3.7 MB/min（预估 3.5 小时）。机器 A 原版（v1 单流分块）思路相同，差别只在并发与断点粒度；两版源都是 GitHub Release。
+设计：2 MiB 块进共享队列、6 worker 抢；写同一 <code>.part</code>（<code>fs.writeSync(fd, buf, 0, len, offset)</code> 位置写）；<code>&lt;part&gt;.chunks.json</code> 记录已完成块 → 重跑只补缺块；小文件（&lt;16 MB）走整体单流；全部完成后 sha256 校验。
+⚠️ 打开 <code>.part</code> 不能用 <code>&#39;a&#39;</code>（O_APPEND 忽略 position，位置写失效）——用 <code>&#39;r+&#39;</code>/<code>&#39;w+&#39;</code>。
+⚠️ 顶部 <code>PKG</code> 路径按本机改；github 间歇抽风靠「每块 60 次重试 + 等待封顶 15 s」扛过。</p>
+</blockquote>
+<pre><code class="language-js">/**
+ * Parallel chunked downloader for the dsh-router-laya judge checkpoint (842 MB single file).
+ *
+ * v3: 6 concurrent workers pulling 2 MiB Range chunks off a shared queue. Reason: the single
+ * stream here does ~0.06-0.3 MB/s and stalls for minutes at a time, while a 4-connection probe
+ * showed the aggregate is several times higher. Writes go to a preallocated `.part` file at the
+ * chunk&#39;s offset; progress lives in a sidecar (`&lt;part&gt;.chunks.json`) so a restart resumes only
+ * the missing chunks. Only the GitHub Release endpoint serves here (hf-mirror 404s, hf.co resets).
+ *
+ * Small files (all but model.safetensors): whole-body fetch, single stream.
+ * Every finished file is sha256-verified against weights/manifest.json.
+ * Idempotent: re-run anytime.
+ *
+ * Run:  node fetch-laya-chunked.mjs
+ */
+import fs from &#39;node:fs&#39;;
+import crypto from &#39;node:crypto&#39;;
+import path from &#39;node:path&#39;;
+
+const PKG = String.raw`C:\Users\&lt;user&gt;\AppData\Local\Microsoft\WinGet\Packages\OpenJS.NodeJS.LTS_Microsoft.Winget.Source_8wekyb3d8bbwe\node-v24.19.0-win-x64\node_modules\dsh-router-laya`;
+const DEST = path.join(PKG, &#39;weights&#39;, &#39;model&#39;);
+const CHUNK = 2 * 1024 * 1024;
+const WORKERS = 6;
+const MAX_TRIES = 60;
+const REQ_TIMEOUT_MS = 150_000;
+const SMALL_CUTOFF = 16 * 1024 * 1024;
+const MAX_WAIT_MS = 15_000;
+
+const manifest = JSON.parse(fs.readFileSync(path.join(PKG, &#39;weights&#39;, &#39;manifest.json&#39;), &#39;utf8&#39;));
+const RELEASE_BASE = (manifest.release_base || &#39;&#39;).replace(/\/+$/, &#39;&#39;);
+const files = [...manifest.files].sort((a, b) =&gt; a.bytes - b.bytes); // small first, 842MB last
+
+const sleep = (ms) =&gt; new Promise((r) =&gt; setTimeout(r, ms));
+const MB = (n) =&gt; (n / 1e6).toFixed(1);
+const stamp = () =&gt; new Date().toTimeString().slice(0, 8);
+
+function sha256File(file) {
+  return new Promise((resolve, reject) =&gt; {
+    const h = crypto.createHash(&#39;sha256&#39;);
+    fs.createReadStream(file)
+      .on(&#39;data&#39;, (c) =&gt; h.update(c))
+      .on(&#39;end&#39;, () =&gt; resolve(h.digest(&#39;hex&#39;)))
+      .on(&#39;error&#39;, reject);
+  });
+}
+
+async function downloadSmall(url, f, dest) {
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  let lastErr;
+  for (let attempt = 1; attempt &lt;= 40; attempt++) {
+    try {
+      const res = await fetch(url, { redirect: &#39;follow&#39;, signal: AbortSignal.timeout(REQ_TIMEOUT_MS) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const buf = Buffer.from(await res.arrayBuffer());
+      if (buf.length !== f.bytes) throw new Error(`size ${buf.length} != ${f.bytes}`);
+      fs.writeFileSync(dest, buf);
+      return;
+    } catch (e) {
+      lastErr = e;
+      console.log(`  [retry ${attempt}] ${e.message} (${stamp()})`);
+      await sleep(Math.min(1500 * attempt, MAX_WAIT_MS));
+    }
+  }
+  throw lastErr;
+}
+
+async function downloadQueued(url, f, dest) {
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  const part = dest + &#39;.part&#39;;
+  const sidecar = part + &#39;.chunks.json&#39;;
+
+  const fd = fs.existsSync(part) ? fs.openSync(part, &#39;r+&#39;) : fs.openSync(part, &#39;w+&#39;);
+
+  const totalChunks = Math.ceil(f.bytes / CHUNK);
+  let done = new Set();
+  try {
+    const saved = JSON.parse(fs.readFileSync(sidecar, &#39;utf8&#39;));
+    if (Array.isArray(saved?.done)) done = new Set(saved.done.filter((i) =&gt; Number.isInteger(i) &amp;&amp; i &gt;= 0 &amp;&amp; i &lt; totalChunks));
+  } catch {}
+  if (done.size === 0 &amp;&amp; fs.existsSync(part) &amp;&amp; fs.statSync(part).size === 0) {
+    /* fresh */
+  }
+
+  let doneBytes = 0;
+  for (const i of done) doneBytes += Math.min(CHUNK, f.bytes - i * CHUNK);
+
+  const pending = [];
+  for (let i = 0; i &lt; totalChunks; i++) if (!done.has(i)) pending.push(i);
+
+  const t0 = Date.now();
+  let lastPrint = 0;
+  const saveSidecar = () =&gt; {
+    try {
+      fs.writeFileSync(sidecar, JSON.stringify({ done: [...done].sort((a, b) =&gt; a - b) }));
+    } catch {}
+  };
+  const print = (force) =&gt; {
+    const now = Date.now();
+    if (!force &amp;&amp; now - lastPrint &lt; 15_000) return;
+    lastPrint = now;
+    const mins = Math.max((now - t0) / 60000, 0.05);
+    const rate = doneBytes / 1e6 / mins;
+    const eta = rate &gt; 0.05 ? ((f.bytes - doneBytes) / 1e6 / rate).toFixed(1) : &#39;?&#39;;
+    console.log(`[${stamp()}] ${MB(doneBytes)}/${MB(f.bytes)} MB  ${rate.toFixed(1)} MB/min  eta ~${eta} min  (${done.size}/${totalChunks} chunks)`);
+  };
+
+  console.log(`[resume] ${done.size}/${totalChunks} chunks already done (${MB(doneBytes)} MB); ${pending.length} to fetch with ${WORKERS} workers`);
+  print(true);
+
+  let cursor = 0;
+  let stopped = false;
+  let failErr = null;
+
+  async function worker(n) {
+    while (!stopped) {
+      const qi = cursor++;
+      if (qi &gt;= pending.length) return;
+      const ci = pending[qi];
+      const start = ci * CHUNK;
+      const end = Math.min(start + CHUNK, f.bytes) - 1;
+      let ok = false;
+      let lastErr;
+      for (let attempt = 1; attempt &lt;= MAX_TRIES &amp;&amp; !ok; attempt++) {
+        if (stopped) return;
+        try {
+          const res = await fetch(url, {
+            headers: { Range: `bytes=${start}-${end}` },
+            redirect: &#39;follow&#39;,
+            signal: AbortSignal.timeout(REQ_TIMEOUT_MS),
+          });
+          if (res.status !== 206) throw new Error(`HTTP ${res.status}`);
+          const buf = Buffer.from(await res.arrayBuffer());
+          if (buf.length !== end - start + 1) throw new Error(`short ${buf.length}/${end - start + 1}`);
+          fs.writeSync(fd, buf, 0, buf.length, start);
+          done.add(ci);
+          doneBytes += buf.length;
+          saveSidecar();
+          ok = true;
+        } catch (e) {
+          lastErr = e;
+          if (attempt === 1 || attempt % 10 === 0) {
+            console.log(`  [w${n} chunk${ci} retry ${attempt}] ${e.message} (${stamp()})`);
+          }
+          await sleep(Math.min(800 * attempt, MAX_WAIT_MS));
+        }
+      }
+      if (!ok) {
+        stopped = true;
+        failErr = new Error(`chunk ${ci} at ${MB(start)} MB failed after ${MAX_TRIES} tries: ${lastErr?.message}`);
+        return;
+      }
+      print(false);
+    }
+  }
+
+  await Promise.all(Array.from({ length: WORKERS }, (_, n) =&gt; worker(n)));
+  if (failErr) {
+    fs.closeSync(fd); // keep part + sidecar for resume
+    throw failErr;
+  }
+
+  fs.fsyncSync(fd);
+  fs.closeSync(fd);
+  const sz = fs.statSync(part).size;
+  if (sz !== f.bytes) throw new Error(`final size ${sz} != ${f.bytes}`);
+  fs.rmSync(sidecar, { force: true });
+  fs.renameSync(part, dest);
+  print(true);
+}
+
+let failures = 0;
+for (const f of files) {
+  const dest = path.join(DEST, f.path);
+  const url = `${RELEASE_BASE}/${f.path.split(&#39;/&#39;).join(&#39;__&#39;)}`;
+
+  try {
+    if (fs.existsSync(dest) &amp;&amp; (await sha256File(dest)) === f.sha256) {
+      console.log(`[ok] ${f.path} (cached)`);
+      continue;
+    }
+    if (fs.existsSync(dest)) { console.log(`[redo] ${f.path} (sha mismatch)`); fs.rmSync(dest); }
+
+    console.log(`[get] ${f.path} (${MB(f.bytes)} MB)`);
+    if (f.bytes &lt;= SMALL_CUTOFF) await downloadSmall(url, f, dest);
+    else await downloadQueued(url, f, dest);
+    const got = await sha256File(dest);
+    if (got !== f.sha256) throw new Error(`sha256 mismatch (got ${got.slice(0, 12)}..., want ${f.sha256.slice(0, 12)}...)`);
+    console.log(`[done] ${f.path} sha256 verified`);
+  } catch (e) {
+    failures++;
+    console.log(`[FAIL] ${f.path}: ${e.message}`);
+  }
+}
+
+console.log(failures === 0 ? &#39;ALL FILES OK&#39; : `${failures} file(s) failed`);
+process.exit(failures === 0 ? 0 : 1);
+</code></pre>
+<hr>
+<h2 id="s26">附录 B：读 OC 消息库看每轮 reasoning token（<code>oc-db-dur.py</code>）<a class="anchor" href="#s26" aria-label="本节链接">#</a></h2>
+<blockquote>
+<p>OC 把会话存在 <code>~/.local/share/opencode/opencode.db</code>（SQLite），<code>message.data</code> 是 JSON，含 <code>tokens.reasoning</code>。只读打开，不影响运行中的 OC。</p>
+</blockquote>
+<pre><code class="language-python">import sqlite3, json, datetime
+
+db = &#39;file:C:/Users/user/.local/share/opencode/opencode.db?mode=ro&#39;
+con = sqlite3.connect(db, uri=True, timeout=10)
+cur = con.cursor()
+rows = cur.execute(&quot;select id, session_id, time_created, data from message order by time_created desc limit 10&quot;).fetchall()
+print(f&quot;{&#39;time&#39;:9} {&#39;dur(s)&#39;:7} {&#39;model&#39;:42} {&#39;reason&#39;:6} {&#39;out&#39;:5} {&#39;finish&#39;:10}&quot;)
+for mid, sid, tc, data in rows:
+    j = json.loads(data)
+    if j.get(&#39;role&#39;) != &#39;assistant&#39;:
+        continue
+    t = j.get(&#39;time&#39;) or {}
+    dur = ((t.get(&#39;completed&#39;) or 0) - (t.get(&#39;created&#39;) or 0)) / 1000 if t.get(&#39;completed&#39;) else None
+    tk = j.get(&#39;tokens&#39;) or {}
+    when = datetime.datetime.fromtimestamp((tc or 0) / 1000).strftime(&#39;%H:%M:%S&#39;)
+    print(f&quot;{when:9} {str(round(dur,1) if dur else &#39;-&#39;):7} {(j.get(&#39;providerID&#39;) or &#39;?&#39;) + &#39;/&#39; + (j.get(&#39;modelID&#39;) or &#39;?&#39;):42} &quot;
+          f&quot;{str(tk.get(&#39;reasoning&#39;)):6} {str(tk.get(&#39;output&#39;)):5} {str(j.get(&#39;finish&#39;)):10}&quot;)
+con.close()
+</code></pre>
+<hr>
+<h2 id="s27">附录 C：OC 插件全文（机器 B 最终版，含 autostart）<a class="anchor" href="#s27" aria-label="本节链接">#</a></h2>
+<blockquote>
+<p><strong>与机器 A 版的差异</strong>：① 导出形式 <code>export default</code>（机器 B 的 opencode；机器 A 为 named export——以本机既有插件写法为准，见 §4.1）；② 服务路径<strong>候选探测</strong>（<code>ROUTER_LAYA_PYTHON/SCRIPT</code> env → <code>~/.dsh-router-laya/venv</code> → 包内 <code>.venv-router</code>）；③ 含 <strong>autostart</strong>（加载时健康检查 + 每轮不可达时拉起，60 s 冷却标记 <code>%TEMP%\router-laya-oc.spawn</code>）——修正原文「§4.2 描述 autostart、附录 C 快照却没有」的不一致；④ <code>ROUTER_LAYA_TIMEOUT_MS</code> 默认 <strong>20000</strong>（机器 B 判定 4–9 s）。
+放置路径：<code>~/.config/opencode/plugin/router-laya.js</code>（<strong>目录名以本机为准</strong>）。改完重启 OC 生效。</p>
+</blockquote>
+<pre><code class="language-js">/**
+ * dsh-router-laya for OpenCode — a local Laya judge (dsh-router-laya&#39;s Python service)
+ * decides the reasoning tier per request, and this plugin applies it as that request&#39;s
+ * reasoning effort. The model is deliberately left alone: router-laya&#39;s whole point is
+ * that one model is used at low/high/max effort.
+ *
+ * Installed on this machine 2026-10-07 from router-laya-install-guide §4 (OC port), with
+ * these local adaptations:
+ *   - plugin dir here is ~/.config/opencode/plugin (singular; verified live via skill-sync),
+ *     not `plugins/` as the guide&#39;s source machine had.
+ *   - the judge service auto-starts from here (spawn, 60 s cooldown). Service paths: the
+ *     npm package lives under the WinGet node prefix (npm prefix -g), and its venv was
+ *     built OUTSIDE the package at ~/.dsh-router-laya/venv (short path — the package path
+ *     itself is ~165 chars, and pip blew up on Windows MAX_PATH inside it).
+ *
+ * When does it route? Exactly when your OpenCode variant picker says **Default**.
+ *   - picker = Default  -&gt; the judge decides the tier for every turn (auto)
+ *   - picker = low/medium/high/xhigh/max -&gt; hands off, your choice is used verbatim
+ *     (and the judge is not called at all, so this costs no latency)
+ * Set ROUTER_LAYA_RESPECT_EXPLICIT=0 to keep routing even when a variant is pinned.
+ *
+ * Where the tier is written (both, deliberately):
+ *   - `input.message.variant` — OpenCode&#39;s per-request variant. This is the channel that
+ *     visibly works (verified upstream: the same prompt at forced low vs forced max gave
+ *     0 vs 1034 reasoning tokens). It also makes omo&#39;s own `applyAgentVariant` stand down
+ *     for that turn (it skips when the message already carries a variant).
+ *   - `output.options.reasoningEffort` — the request option, kept for models/providers that
+ *     read it. OpenCode filters values the model does not declare, so an invalid value here
+ *     fails silently (not usable as a channel test).
+ *
+ * What the judge sees (it does NOT read the conversation): the current message text, the
+ * previous turn&#39;s tier, and the previous turn&#39;s text (the last two only for &quot;keep the last
+ * tier&quot; intent and for retry/escalation detection).
+ *
+ * Two caches keep this honest, because OpenCode instantiates a local plugin once per
+ * instance/context — several live instances all receive the same hooks:
+ *   - per-session memory: one user turn = one judgment, however many LLM calls it makes
+ *     (re-judging inside a turn would look like a retry and escalate by itself);
+ *   - a small shared file: the other instances reuse the verdict instead of paying a second
+ *     judge call and firing a second toast for the same turn.
+ *
+ * Env:
+ *   ROUTER_LAYA=0                     disable everything (pass-through)
+ *   ROUTER_LAYA_JUDGE_URL=...         judge endpoint (default http://127.0.0.1:8765/judge)
+ *   ROUTER_LAYA_TIMEOUT_MS=20000      judge timeout; on failure the request is left untouched
+ *                                     (this machine: CPU-only 6 核 CPU judges in ~4-9 s,
+ *                                      so the guide&#39;s 6000 default was raised to 20000)
+ *   ROUTER_LAYA_RESPECT_EXPLICIT=0    route even when a variant is pinned (default: defer)
+ *   ROUTER_LAYA_PROBE=&lt;value&gt;         force this tier, skipping the judge
+ *   ROUTER_LAYA_TOAST=0               silence the per-turn toast (default: on)
+ *   ROUTER_LAYA_AUTOSTART=0           never auto-start the judge service
+ *   ROUTER_LAYA_PYTHON / ROUTER_LAYA_SCRIPT   override the judge service paths
+ *
+ * Runtime switches — files, so no OpenCode restart is needed:
+ *   %TEMP%/router-laya-oc.mode    &quot;manual&quot; = pass-through, anything else/absent = auto
+ *   %TEMP%/router-laya-oc.probe   force this tier for every request (A/B testing; delete to
+ *                                 go back to real routing) — use declared levels (low/high/max)
+ *
+ * Log: %TEMP%/router-laya-oc.log
+ */
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from &quot;node:fs&quot;
+import { createHash } from &quot;node:crypto&quot;
+import { spawn } from &quot;node:child_process&quot;
+import { tmpdir } from &quot;node:os&quot;
+import { join } from &quot;node:path&quot;
+
+const JUDGE_URL = process.env.ROUTER_LAYA_JUDGE_URL ?? &quot;http://127.0.0.1:8765/judge&quot;
+const JUDGE_PORT = (() =&gt; {
+  try {
+    return new URL(JUDGE_URL).port || &quot;8765&quot;
+  } catch {
+    return &quot;8765&quot;
+  }
+})()
+const TIMEOUT_MS = Number(process.env.ROUTER_LAYA_TIMEOUT_MS ?? 20000)
+const PROBE = process.env.ROUTER_LAYA_PROBE ?? &quot;&quot;
+const DISABLED = process.env.ROUTER_LAYA === &quot;0&quot;
+// Default ON: a pinned variant means the user has decided, so the judge stays out of the way.
+const RESPECT_EXPLICIT = process.env.ROUTER_LAYA_RESPECT_EXPLICIT !== &quot;0&quot;
+const TOAST = process.env.ROUTER_LAYA_TOAST !== &quot;0&quot;
+const AUTOSTART = process.env.ROUTER_LAYA_AUTOSTART !== &quot;0&quot;
+const LOG_FILE = join(tmpdir(), &quot;router-laya-oc.log&quot;)
+const MODE_FILE = join(tmpdir(), &quot;router-laya-oc.mode&quot;)
+const PROBE_FILE = join(tmpdir(), &quot;router-laya-oc.probe&quot;)
+const SHARED_FILE = join(tmpdir(), &quot;router-laya-oc.shared.json&quot;)
+const SPAWN_MARKER = join(tmpdir(), &quot;router-laya-oc.spawn&quot;)
+const SHARED_TTL_MS = 10 * 60 * 1000
+const SPAWN_COOLDOWN_MS = 60 * 1000
+
+// Judge service paths (this machine). First existing candidate wins; env overrides first.
+const SERVICE_PYTHON_CANDIDATES = [
+  process.env.ROUTER_LAYA_PYTHON,
+  join(process.env.USERPROFILE ?? &quot;&quot;, &quot;.dsh-router-laya&quot;, &quot;venv&quot;, &quot;Scripts&quot;, &quot;python.exe&quot;),
+  join(process.env.APPDATA ?? &quot;&quot;, &quot;npm&quot;, &quot;node_modules&quot;, &quot;dsh-router-laya&quot;, &quot;.venv-router&quot;, &quot;Scripts&quot;, &quot;python.exe&quot;),
+].filter(Boolean)
+const SERVICE_PYTHON =
+  SERVICE_PYTHON_CANDIDATES.find((p) =&gt; existsSync(p)) ?? SERVICE_PYTHON_CANDIDATES[0]
+const SERVICE_SCRIPT_CANDIDATES = [
+  process.env.ROUTER_LAYA_SCRIPT,
+  join(process.env.APPDATA ?? &quot;&quot;, &quot;npm&quot;, &quot;node_modules&quot;, &quot;dsh-router-laya&quot;, &quot;service&quot;, &quot;laya_router.py&quot;),
+  String.raw`C:\Users\&lt;user&gt;\AppData\Local\Microsoft\WinGet\Packages\OpenJS.NodeJS.LTS_Microsoft.Winget.Source_8wekyb3d8bbwe\node-v24.19.0-win-x64\node_modules\dsh-router-laya\service\laya_router.py`,
+].filter(Boolean)
+const SERVICE_SCRIPT =
+  SERVICE_SCRIPT_CANDIDATES.find((p) =&gt; existsSync(p)) ?? SERVICE_SCRIPT_CANDIDATES[0]
+
+const TIERS = new Set([&quot;low&quot;, &quot;high&quot;, &quot;max&quot;])
+/** Variant values that mean &quot;no choice made&quot; — only these let the judge route. */
+const UNPINNED = new Set([&quot;&quot;, &quot;default&quot;, &quot;auto&quot;, &quot;none&quot;])
+
+/**
+ * sessionID -&gt; {
+ *   text, pinned,          // this turn: task text, the variant the picker had (if any)
+ *   turn,                  // bumped by chat.message; identifies the user turn
+ *   tier, task,            // what we served last turn (feeds prev_tier / prev_task)
+ *   cachedTurn, cachedTier // the verdict already computed for `turn`
+ * }
+ */
+const sessions = new Map()
+
+function log(message) {
+  try {
+    appendFileSync(LOG_FILE, `[${new Date().toISOString()}] ${message}\n`, &quot;utf8&quot;)
+  } catch {}
+}
+
+function digest(text) {
+  return createHash(&quot;sha1&quot;).update(text).digest(&quot;hex&quot;).slice(0, 12)
+}
+
+/** Runtime switch: re-read per request, so flipping it needs no OpenCode restart. */
+function manual() {
+  if (DISABLED) return true
+  try {
+    return readFileSync(MODE_FILE, &quot;utf8&quot;).trim() === &quot;manual&quot;
+  } catch {
+    return false
+  }
+}
+
+/** A/B testing: force one tier for every request (file wins, env is the fallback). */
+function probeValue() {
+  if (PROBE) return PROBE
+  try {
+    return readFileSync(PROBE_FILE, &quot;utf8&quot;).trim()
+  } catch {
+    return &quot;&quot;
+  }
+}
+
+async function healthUp() {
+  try {
+    const base = JUDGE_URL.replace(/\/judge\/?$/, &quot;&quot;)
+    const res = await fetch(`${base}/health`, { signal: AbortSignal.timeout(2500) })
+    if (!res.ok) return false
+    const info = await res.json()
+    return info?.protocol === &quot;finetuned&quot;
+  } catch {
+    return false
+  }
+}
+
+/** Start the judge service (detached, shared with DSH; EADDRINUSE self-dedupes). */
+function startJudge() {
+  if (!AUTOSTART) return
+  try {
+    const last = Number(readFileSync(SPAWN_MARKER, &quot;utf8&quot;).trim() || &quot;0&quot;)
+    if (Date.now() - last &lt; SPAWN_COOLDOWN_MS) return
+  } catch {}
+  try {
+    writeFileSync(SPAWN_MARKER, String(Date.now()), &quot;utf8&quot;)
+  } catch {}
+  try {
+    const child = spawn(SERVICE_PYTHON, [SERVICE_SCRIPT, &quot;--http&quot;, &quot;--port&quot;, String(JUDGE_PORT)], {
+      detached: true,
+      windowsHide: true,
+      stdio: &quot;ignore&quot;,
+    })
+    child.unref()
+    log(`judge down -&gt; spawned: &quot;${SERVICE_PYTHON}&quot; &quot;${SERVICE_SCRIPT}&quot; --http --port ${JUDGE_PORT}`)
+  } catch (error) {
+    log(`spawn failed: ${error.message}`)
+  }
+}
+
+/** Write the tier into every channel OpenCode reads for a request. */
+function applyTier(input, output, tier) {
+  output.options = { ...(output.options ?? {}), reasoningEffort: tier }
+  const message = input?.message
+  if (message !== null &amp;&amp; typeof message === &quot;object&quot;) message.variant = tier
+}
+
+/**
+ * Cross-instance verdict cache. `text` is stored alongside the tier so a turn-number
+ * collision can never serve a verdict that belongs to different text.
+ */
+function sharedGet(key, text) {
+  try {
+    const all = JSON.parse(readFileSync(SHARED_FILE, &quot;utf8&quot;))
+    const hit = all?.[key]
+    if (!hit || typeof hit.tier !== &quot;string&quot;) return null
+    if (Date.now() - (hit.ts ?? 0) &gt; SHARED_TTL_MS) return null
+    return hit.text === digest(text) ? hit.tier : null
+  } catch {
+    return null
+  }
+}
+
+function sharedPut(key, tier, text) {
+  try {
+    let all = {}
+    try {
+      all = JSON.parse(readFileSync(SHARED_FILE, &quot;utf8&quot;)) ?? {}
+    } catch {}
+    const now = Date.now()
+    for (const [k, v] of Object.entries(all)) if (!v || now - (v.ts ?? 0) &gt; SHARED_TTL_MS) delete all[k]
+    all[key] = { tier, text: digest(text), ts: now }
+    writeFileSync(SHARED_FILE, JSON.stringify(all), &quot;utf8&quot;)
+  } catch {}
+}
+
+async function toast(client, message) {
+  if (!TOAST) return
+  try {
+    await client?.tui?.showToast?.({ body: { title: &quot;router-laya&quot;, message, variant: &quot;info&quot;, duration: 2500 } })
+  } catch (error) {
+    log(`toast failed: ${error.message}`)
+  }
+}
+
+function textOf(parts) {
+  return (parts ?? [])
+    .filter((p) =&gt; p &amp;&amp; p.type === &quot;text&quot; &amp;&amp; typeof p.text === &quot;string&quot;)
+    .map((p) =&gt; p.text)
+    .join(&quot;\n&quot;)
+    .trim()
+}
+
+async function judge(task, prev, sessionID) {
+  const res = await fetch(JUDGE_URL, {
+    method: &quot;POST&quot;,
+    headers: { &quot;Content-Type&quot;: &quot;application/json&quot; },
+    body: JSON.stringify({
+      task: task.slice(0, 4000),
+      prev_tier: prev?.tier ?? null,
+      prev_task: prev?.task ?? null,
+      session_id: sessionID ?? null,
+    }),
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const body = await res.json()
+  if (body.error) throw new Error(String(body.error))
+  if (typeof body.tier !== &quot;string&quot; || !TIERS.has(body.tier)) throw new Error(`bad verdict ${JSON.stringify(body).slice(0, 120)}`)
+  return { tier: body.tier, by: body.triggered_by ?? &quot;&quot;, ms: body.ms ?? null }
+}
+
+export default async ({ client }) =&gt; {
+  log(`init pid=${process.pid} judge=${JUDGE_URL} python=${SERVICE_PYTHON} script=${SERVICE_SCRIPT} autostart=${AUTOSTART} respectExplicit=${RESPECT_EXPLICIT} toast=${TOAST}`)
+  try {
+    await client?.app?.log?.({
+      body: { service: &quot;router-laya&quot;, level: &quot;info&quot;, message: &quot;router-laya plugin loaded&quot;, extra: { judge: JUDGE_URL } },
+    })
+  } catch {}
+
+  // Autostart off the request path: health-check once at load; spawn only when it is down.
+  if (AUTOSTART) {
+    void healthUp().then((up) =&gt; {
+      if (!up) startJudge()
+    })
+  }
+
+  return {
+    /** New user turn: capture its text, the picker&#39;s variant, and open a fresh verdict slot. */
+    &quot;chat.message&quot;: async (input, output) =&gt; {
+      const text = textOf(output?.parts)
+      const variant = typeof input.variant === &quot;string&quot; ? input.variant.trim() : &quot;&quot;
+      const pinned = !UNPINNED.has(variant.toLowerCase())
+      const cur = sessions.get(input.sessionID) ?? {}
+      sessions.set(input.sessionID, {
+        ...cur,
+        text,
+        variant,
+        pinned,
+        turn: (cur.turn ?? 0) + 1,
+        cachedTurn: -1,
+        cachedTier: undefined,
+      })
+      log(`message session=${input.sessionID} agent=${input.agent ?? &quot;-&quot;} variant=${variant || &quot;(default)&quot;} -&gt; ${pinned ? &quot;MANUAL (hands off)&quot; : &quot;AUTO&quot;} turn=${(cur.turn ?? 0) + 1} text=${JSON.stringify(text.slice(0, 60))}`)
+    },
+
+    /** Ask the judge (once per turn) and apply the tier to this request. */
+    &quot;chat.params&quot;: async (input, output) =&gt; {
+      if (manual()) return
+      const cur = sessions.get(input.sessionID) ?? {}
+      const turn = cur.turn ?? 0
+      const model = `${input.model?.providerID ?? &quot;?&quot;}/${input.model?.id ?? &quot;?&quot;}`
+
+      // Same turn, already judged: reuse it. This is what keeps a multi-call turn (tool loop)
+      // from being read as a retry -- the judge&#39;s escalation is for the *user* retrying.
+      if (cur.cachedTier !== undefined &amp;&amp; cur.cachedTurn === turn) {
+        applyTier(input, output, cur.cachedTier)
+        log(`cached session=${input.sessionID} turn=${turn} -&gt; ${cur.cachedTier}`)
+        return
+      }
+
+      const probe = probeValue()
+      if (probe) {
+        applyTier(input, output, probe)
+        sessions.set(input.sessionID, { ...cur, cachedTurn: turn, cachedTier: probe })
+        log(`probe session=${input.sessionID} turn=${turn}: forced ${probe} (variant+options) model=${model}`)
+        return
+      }
+
+      // The picker is the switch: a pinned variant means the user decided, so hands off.
+      if (RESPECT_EXPLICIT &amp;&amp; cur.pinned) {
+        log(`session=${input.sessionID} turn=${turn}: picker pinned &#39;${cur.variant}&#39; -- hands off`)
+        return
+      }
+
+      const text = cur.text || textOf(input.message?.parts)
+      if (!text) {
+        log(&quot;no task text captured -- leaving the request untouched&quot;)
+        return
+      }
+      if (input.model?.capabilities?.reasoning === false) {
+        log(`model ${model} does not declare reasoning -- leaving the request untouched`)
+        return
+      }
+
+      // Another OpenCode instance already judged this turn: reuse its verdict (no 2nd call, no 2nd toast).
+      const sharedKey = `${input.sessionID}|${turn}`
+      const sharedTier = sharedGet(sharedKey, text)
+      if (sharedTier !== null) {
+        applyTier(input, output, sharedTier)
+        sessions.set(input.sessionID, { ...cur, text, tier: sharedTier, task: text, cachedTurn: turn, cachedTier: sharedTier })
+        log(`shared session=${input.sessionID} turn=${turn} -&gt; ${sharedTier} (another instance judged it)`)
+        return
+      }
+
+      try {
+        const verdict = await judge(text, { tier: cur.tier, task: cur.task }, input.sessionID)
+        applyTier(input, output, verdict.tier)
+        const changed = verdict.tier !== cur.tier
+        sessions.set(input.sessionID, { ...cur, text, tier: verdict.tier, task: text, cachedTurn: turn, cachedTier: verdict.tier })
+        sharedPut(sharedKey, verdict.tier, text)
+        log(`route session=${input.sessionID} turn=${turn} -&gt; ${verdict.tier}${changed ? &quot; (changed)&quot; : &quot;&quot;} (${verdict.by}, ${verdict.ms}ms) model=${model}`)
+        if (changed) await toast(client, `${verdict.tier.toUpperCase()} · ${verdict.by || &quot;laya&quot;} · ${verdict.ms ?? &quot;?&quot;}ms`)
+      } catch (error) {
+        // fail-safe: an unreachable judge must never break the turn; try to (re)start it too
+        log(`judge unavailable (${error.message}) -- leaving the request untouched`)
+        startJudge()
+      }
+    },
+  }
+}
+</code></pre>
+<hr>
+<h2 id="s28">附录 D：速查<a class="anchor" href="#s28" aria-label="本节链接">#</a></h2>
+<pre><code>判定服务      http://127.0.0.1:8765      （/judge POST、/health、/state）
+健康检查      Invoke-RestMethod http://127.0.0.1:8765/health  → protocol 必须是 finetuned
+端口检查      netstat -ano | findstr :8765                    （沙箱里别用 Get-NetTCPConnection）
+DSH 芯片接口   http://&lt;web载体端口&gt;/router-laya/mode?token=…（机器 A 19387；机器 B 43129，token 见 harness.log 的 `dsh web:` 行）
+DSH 家目录     %APPDATA%\dsh-desktop\harness（= $env:DSH_HOME；机器 B 没有 ~/.dsh），profile = web（$env:DSH_PROFILE）
+DSH 补丁层     &lt;DSH_HOME&gt;\profiles\&lt;profile&gt;\cordis.patch.yml   （tiers/routes 必写，见 §3.2）
+DSH 挂载证据   harness.log：`[router-laya] auto tier per turn; tiers low=…` ＋ `judge service: already up|started`
+DSH 插件日志   %APPDATA%\dsh-desktop\logs\harness.log（插件 stderr 会桥接到这里）
+服务包目录     %APPDATA%\npm\node_modules\dsh-router-laya（以 `npm prefix -g` 实际值为准；机器 B 在 WinGet 深路径下）
+机器 B venv    ~\.dsh-router-laya\venv（包外短路径）＋归档区 ~\.dsh-router-laya\（权重备份/脚本/README/dsh-side 安装脚本）
+单实例闸门     命名互斥体 dsh-router-laya-service-&lt;port&gt;；重复启动在【读 checkpoint 之前】退出并打 [single-instance]（§4.2 补充 2）
+谁拉起服务     OC 插件（加载时 + 每轮不可达时）／DSH 插件（auto: true 开机异步拉起）／可选预热（附录 E）
+服务日志      %TEMP%\laya-router-service.log（DSH 插件拉）；%TEMP%\laya-router-service.out.log / .err.log
+              （start_router.ps1 拉时写这两个；OC 插件拉是 stdio:ignore，不写）
+OC 插件日志    %TEMP%\router-laya-oc.log
+OC 插件开关    %TEMP%\router-laya-oc.mode    (&quot;manual&quot; = 旁路)
+OC 强制档位    %TEMP%\router-laya-oc.probe   (A/B 验证)
+OC 共享裁决    %TEMP%\router-laya-oc.shared.json
+OC 拉起节流    %TEMP%\router-laya-oc.spawn   (60 s 冷却标记)
+OC 消息库      ~/.local/share/opencode/opencode.db
+OC 运行日志    ~/.local/share/opencode/log/opencode.log
+权重校验       model.safetensors = 842,609,220 B
+              sha256 f14cf869ebc4d0adab3102627a92f0b677678d05e5353e3e55dc11f4fc6172de
+判定耗时       机器 A ~1.4 s/轮；机器 B 4–9 s/轮（CPU 而异，计入首字延迟）
+              插件 ROUTER_LAYA_TIMEOUT_MS 必须 ≥ 它（机器 B 用 20000）；服务常驻内存 ~1.5–1.9 GB
+冷启动         ~40 s（慢时 3 min）；期间每轮 fail-safe 丢档
+</code></pre>
+<p><strong>一句话成本安全</strong>：OC 插件只改 reasoningEffort（每行 <code>model=</code> 可核对供应商）；DSH 插件内置表指向 <code>deepseek-official</code>，<strong>必须</strong>覆盖 <code>tiers</code>（§3.2）。</p>
+<hr>
+<h2 id="s29">附录 E：可选预热（登录计划任务，消掉冷启动窗口）<a class="anchor" href="#s29" aria-label="本节链接">#</a></h2>
+<p><strong>什么时候需要</strong>：你习惯&quot;开机后先开 OC&quot;。OC 插件虽然会自启动判定服务，但冷启动那 ~40 s–3 min 内每轮都 fail-safe 丢档（§4.2）。
+预热只在<strong>登录时</strong>把服务拉起来，不改判定逻辑；<strong>没有它也能正常工作</strong>。</p>
+<p>三个部件：幂等脚本 + 隐藏启动器 + 登录触发任务。</p>
+<p><strong>① <code>C:\Users\&lt;you&gt;\.dsh\bin\warm-laya-judge.ps1</code></strong>（幂等；启动方式与插件 spawn 完全一致）</p>
+<blockquote>
+<p>路径只是机器 A 的约定：机器 B 没有 <code>~/.dsh</code>，脚本放归档区 <code>~\.dsh-router-laya\</code>（或任意目录）即可，计划任务里写全路径。</p>
+</blockquote>
+<pre><code class="language-powershell"># Pre-heat the Laya judge service shared by the OC and DSH router-laya plugins.
+#   - idempotent: exits at once when the service is already healthy
+#   - hidden: launches pythonw.exe (no console window)
+#   - spawn matches the DSH plugin exactly: &lt;script&gt; --http --port 8765, PYTHONIOENCODING=utf-8
+$ErrorActionPreference = &#39;SilentlyContinue&#39;
+
+$Python = &#39;C:\Users\&lt;you&gt;\AppData\Roaming\npm\node_modules\dsh-router-laya\.venv-router\Scripts\pythonw.exe&#39;
+$Script = &#39;C:\Users\&lt;you&gt;\AppData\Roaming\npm\node_modules\dsh-router-laya\service\laya_router.py&#39;
+$Port   = 8765
+$WaitSeconds = 180
+
+if ($env:LOCALAPPDATA) { $TempRoot = Join-Path $env:LOCALAPPDATA &#39;Temp&#39; } else { $TempRoot = $env:TEMP }
+$PreheatLog = Join-Path $TempRoot &#39;laya-preheat.log&#39;
+$ServiceLog = Join-Path $TempRoot &#39;laya-router-service.log&#39;
+
+function Write-PreheatLog([string]$Message) {
+    $stamp = (Get-Date).ToString(&#39;yyyy-MM-dd HH:mm:ss&#39;)
+    Add-Content -Path $PreheatLog -Value (&quot;[$stamp] $Message&quot;) -Encoding UTF8
+}
+
+function Test-JudgeHealthy {
+    try {
+        $wc = New-Object System.Net.WebClient
+        $wc.Proxy = $null
+        $body = $wc.DownloadString(&quot;http://127.0.0.1:$Port/health&quot;)
+        return ($body -match &#39;&quot;protocol&quot;\s*:\s*&quot;finetuned&quot;&#39;)
+    } catch { return $false }
+}
+
+function Test-PortBusy {
+    $client = New-Object System.Net.Sockets.TcpClient
+    try {
+        $task = $client.ConnectAsync(&#39;127.0.0.1&#39;, $Port)
+        return ($task.Wait(800) -and $client.Connected)
+    } catch { return $false } finally { $client.Close() }
+}
+
+if (Test-JudgeHealthy) {
+    Write-PreheatLog &quot;already healthy on 127.0.0.1:$Port - nothing to do&quot;
+    exit 0
+}
+if (Test-PortBusy) {
+    Write-PreheatLog &quot;port $Port busy but /health is not the finetuned protocol - not spawning&quot;
+    exit 2
+}
+foreach ($p in @($Python, $Script)) {
+    if (-not (Test-Path $p)) { Write-PreheatLog &quot;missing required file: $p&quot;; exit 3 }
+}
+
+Write-PreheatLog &quot;judge down - spawning pythonw (--http --port $Port)&quot;
+$inner = &#39;set PYTHONIOENCODING=utf-8 &amp;&amp; &quot;{0}&quot; &quot;{1}&quot; --http --port {2} &gt;&gt; &quot;{3}&quot; 2&gt;&amp;1&#39; -f $Python, $Script, $Port, $ServiceLog
+Start-Process -FilePath (Join-Path $env:SystemRoot &#39;System32\cmd.exe&#39;) -ArgumentList @(&#39;/c&#39;, $inner) -WindowStyle Hidden
+
+$deadline = (Get-Date).AddSeconds($WaitSeconds)
+while ((Get-Date) -lt $deadline) {
+    Start-Sleep -Seconds 2
+    if (Test-JudgeHealthy) { Write-PreheatLog &quot;judge ready&quot;; exit 0 }
+}
+Write-PreheatLog &quot;judge did not become healthy within $WaitSeconds s - see $ServiceLog&quot;
+exit 1
+</code></pre>
+<p><strong>② <code>C:\Users\&lt;you&gt;\.dsh\bin\warm-laya-judge.vbs</code></strong>（隐藏启动，避免登录时黑框一闪）</p>
+<pre><code class="language-vbscript">&#39; launch the pre-heat script with no visible window
+Set sh = CreateObject(&quot;WScript.Shell&quot;)
+sh.Run &quot;powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;&quot;C:\Users\&lt;you&gt;\.dsh\bin\warm-laya-judge.ps1&quot;&quot;&quot;, 0, False
+</code></pre>
+<p><strong>③ 注册任务</strong></p>
+<pre><code class="language-powershell"># 登录后延迟 30 s 执行（给桌面留启动时间）；隐藏窗口交给 VBS
+$action  = New-ScheduledTaskAction -Execute &#39;wscript.exe&#39; -Argument &#39;&quot;C:\Users\&lt;you&gt;\.dsh\bin\warm-laya-judge.vbs&quot;&#39;
+$trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+$trigger.Delay = &#39;PT30S&#39;
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 10)
+Register-ScheduledTask -TaskName &#39;warm-laya-judge&#39; -Action $action -Trigger $trigger -Settings $settings -Force
+
+# 立刻预热一次（不想重启验证时）
+powershell -NoProfile -ExecutionPolicy Bypass -File &quot;C:\Users\&lt;you&gt;\.dsh\bin\warm-laya-judge.ps1&quot;
+
+# 撤销
+Disable-ScheduledTask    -TaskName &#39;warm-laya-judge&#39;
+Unregister-ScheduledTask -TaskName &#39;warm-laya-judge&#39;
+</code></pre>
+<p><strong>④ 验收</strong></p>
+<pre><code class="language-powershell">Get-ScheduledTask     -TaskName &#39;warm-laya-judge&#39; | Select-Object TaskName,State
+Get-ScheduledTaskInfo -TaskName &#39;warm-laya-judge&#39; | Select-Object LastRunTime,LastTaskResult   # 期待 0
+Get-Content &quot;$env:LOCALAPPDATA\Temp\laya-preheat.log&quot; -Tail 3   # &quot;already healthy&quot; 或 &quot;judge ready&quot;
+</code></pre>
+<p><strong>注意</strong></p>
+<ul>
+<li>脚本<strong>幂等</strong>：服务已健康就直接退出；端口被非 finetuned 服务占用时不硬抢（避免 EADDRINUSE 空转）。</li>
+<li>预热只是让服务&quot;开机就在&quot;，<strong>不会多出一个进程</strong>（服务本身常驻 ~1.9 GB，本来也是常驻）。</li>
+<li>已实测：任务链路（<code>wscript → powershell → ps1 → /health → 退出码 0</code>）通过；<code>pythonw + --http --port 8765 + 重定向</code> 启动链路通过。</li>
+<li>不想要了：<code>Unregister-ScheduledTask</code> + 删掉这两个文件即可 —— §4.2 已说明<strong>没有预热也能用</strong>，代价只是冷启动窗口丢档。</li>
+</ul>
+<hr>
+<h2 id="s30">附录 F：torch <code>WinError 1114</code> 修复（<code>msvc-fix.py</code>）<a class="anchor" href="#s30" aria-label="本节链接">#</a></h2>
+<blockquote>
+<p>背景见 §2.6。从 <code>pip download msvc-runtime --no-deps</code> 得到的 wheel 里提取全套 VC runtime DLL，部署到 <code>&lt;venv&gt;\Scripts\</code> 与 <code>&lt;svc&gt;\torch\lib\</code>（两处都要，原因见 §2.6 末尾）。
+已在机器 B 验证：修复后 <code>import torch</code> + 张量运算正常、服务正常冷启动。WHEEL/DESTS 路径按本机改。</p>
+</blockquote>
+<pre><code class="language-python">&quot;&quot;&quot;Deploy newer VC++ runtime DLLs (14.44 from the msvc-runtime wheel) next to python.exe and
+into torch\\lib so the loader picks them up ahead of the ancient system copy (14.29).
+No admin needed; per-application deployment.
+
+Targets:
+  1. venv\\Scripts  -- python.exe&#39;s own vcruntime140 search starts at the app dir
+  2. torch\\lib     -- c10.dll&#39;s implicit deps search the loading DLL&#39;s dir first
+                      (CPython loads extensions with LOAD_WITH_ALTERED_SEARCH_PATH)
+&quot;&quot;&quot;
+import os
+import shutil
+import zipfile
+
+WHEEL = r&quot;C:\Users\&lt;user&gt;\AppData\Local\Temp\opencode\msvc-rt\msvc_runtime-14.44.35112-cp312-cp312-win_amd64.whl&quot;
+DESTS = [
+    r&quot;C:\Users\&lt;user&gt;\.dsh-router-laya\venv\Scripts&quot;,
+    r&quot;C:\Users\&lt;user&gt;\.dsh-router-laya\venv\Lib\site-packages\torch\lib&quot;,
+]
+
+z = zipfile.ZipFile(WHEEL)
+dlls = [i for i in z.infolist() if i.filename.lower().endswith(&quot;.dll&quot;)]
+print(&quot;DLLs found in wheel:&quot;)
+for i in dlls:
+    print(&quot;  &quot;, i.filename, i.file_size)
+
+for i in dlls:
+    name = os.path.basename(i.filename)
+    if not name:
+        continue
+    data = z.read(i)
+    for d in DESTS:
+        p = os.path.join(d, name)
+        if os.path.exists(p):
+            bak = p + &quot;.bak-20261007&quot;
+            if not os.path.exists(bak):
+                shutil.copy2(p, bak)
+                print(&quot;backed up existing:&quot;, p)
+        with open(p, &quot;wb&quot;) as f:
+            f.write(data)
+    print(&quot;deployed:&quot;, name)
+
+print(&quot;DONE&quot;)
+</code></pre>
+<hr>
+<h2 id="s31">附录 G：机器 B（OC 端）零到一落地实录（2026-10-07）<a class="anchor" href="#s31" aria-label="本节链接">#</a></h2>
+<p><strong>环境</strong>：一台 6 核 CPU 笔记本· Windows + 受管控环境的 DLP · Node v24（WinGet 安装）· Python 3.12 · opencode 桌面版。</p>
+<p><strong>时间线</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>npm 装包 + 手动 venv + pip</td>
+<td>~5 分钟（requirements 从 tarball 提取；venv 放短路径）</td>
+</tr>
+<tr>
+<td>842 MB 权重</td>
+<td><strong>19 分钟</strong>（v3 并发下载器 43 MB/min；单流预估 3.5 小时）</td>
+</tr>
+<tr>
+<td>torch 1114 排查 + 修复</td>
+<td>~15 分钟（datafile 确诊 → msvc-runtime wheel → 部署 14.44）</td>
+</tr>
+<tr>
+<td>起服务 + <code>/judge</code> 验收</td>
+<td>~3 分钟（冷启动 ~40 s；中文任务判 max/low/high 均正确）</td>
+</tr>
+<tr>
+<td>插件写入 + 静态验证</td>
+<td>~5 分钟（bun 加载检查 + 在 opencode app.asar 里扫描 <code>chat.params</code>/<code>chat.message</code>/<code>showToast</code> 确认 hook 存在）</td>
+</tr>
+</tbody></table>
+<p>**归档区 <code>~\.dsh-router-laya\</code>**（包外持久区，<code>npm</code> 升级不动它）：<code>venv\</code>、<code>weights-backup\model\</code>（846 MB，升级后秒级恢复权重）、<code>fetch-laya-chunked.mjs</code>、<code>msvc-fix.py</code>、<code>judge-probe.py</code>、<code>requirements.lock.md</code>、<code>router-laya.js.copy</code>、<code>README.md</code>。</p>
+<p><strong>重启后验收记录（实录）</strong>：</p>
+<pre><code>[10:05:42] init pid=36684 judge=http://127.0.0.1:8765/judge … autostart=true respectExplicit=true toast=true
+[10:06:29] message session=ses_… variant=(default) -&gt; AUTO turn=1 text=&quot;…&quot;
+[10:06:36] route   session=ses_… turn=1 -&gt; high (changed) (laya, 6238ms) model=provider/example-model
+/health =&gt; finetuned ；/state 有判定记录 ；%TEMP%\router-laya-oc.spawn 为空（复用已健康服务，零冷启动）
+</code></pre>
+<p><strong>维护铁律</strong>：</p>
+<ol>
+<li><code>npm i -g dsh-router-laya</code> 升级包 → 包内 <code>weights\model</code> 与包内补丁会丢：从 <code>weights-backup</code> 复制回（秒级）或重跑下载器（~20 分钟）；venv 在包外不受影响。</li>
+<li>重装 venv/torch 后若出现 <code>WinError 1114</code> → 重跑 <code>msvc-fix.py</code>（附录 F）。</li>
+<li>判定服务常驻 ~1.5 GB 内存；内存紧张时先查 <code>/health</code>，不要盲目重拉。⚠️ <strong>别指望 EADDRINUSE 去重</strong>（§4.2 补充 2）：打单实例闸门之前，重复拉起会真的堆出多个 842 MB 实例。</li>
+</ol>
+<hr>
+<h2 id="s32">附录 H：机器 B（DSH 端）零到一落地实录（2026-10-07）<a class="anchor" href="#s32" aria-label="本节链接">#</a></h2>
+<p><strong>前提</strong>：判定大脑（venv + 842 MB 权重 + 服务进程）已在 OC 侧装好并常驻 <code>127.0.0.1:8765</code>（附录 G）。DSH 侧<strong>不重建 venv、不重下权重</strong>，只做接入。</p>
+<p><strong>环境</strong>：DSH Desktop（Electron）· profile <code>web</code> · <code>DSH_HOME=%APPDATA%\dsh-desktop\harness</code> · <strong>没有 <code>dsh</code> CLI</strong> · 默认模型 <code>provider/example-model</code>。</p>
+<h3 id="s33">H.1 实际步骤<a class="anchor" href="#s33" aria-label="本节链接">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>步</th>
+<th>动作</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>侦察：<code>netstat -ano | findstr :8765</code> + <code>/health</code></td>
+<td>服务已在（<code>protocol=finetuned</code>）；包在 <code>npm prefix -g</code> 下（WinGet 深路径），<strong>不在</strong> <code>%APPDATA%\npm</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>node &lt;svc&gt;\install.mjs &lt;DSH_HOME&gt;\profiles\web\node_modules</code></td>
+<td>复制 4 个文件；<code>@deepseek-ai/schemastery</code> 由 Desktop 的 host-module-fallback 解析</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>cordis.patch.yml</code> 追加<strong>手写插入行</strong>（§3.1b / §3.2），<code>tiers</code>/<code>routes</code> 指 <code>provider/example-model</code></td>
+<td>加载器<strong>热应用</strong>：<code>harness.log</code> 出现 <code>[router-laya] auto tier per turn; tiers …</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>laya_router.py</code> 打 CORS 补丁 → <strong>重启服务</strong></td>
+<td><code>dsh-app://app</code>、<code>http://127.0.0.1:43129</code> 放行；<code>evil.example</code> 不给</td>
+</tr>
+<tr>
+<td>5</td>
+<td>发现服务实例堆积（4 个 × 842 MB，可用内存 1.0 GB）→ 加<strong>单实例闸门</strong></td>
+<td><code>netstat</code> 恒定 1 个 LISTENING；可用内存回到 4.4 GB</td>
+</tr>
+</tbody></table>
+<h3 id="s34">H.2 验收证据（实录）<a class="anchor" href="#s34" aria-label="本节链接">#</a></h3>
+<pre><code>netstat -ano | findstr :8765   -&gt;  1 × LISTENING 127.0.0.1:8765
+/health                        -&gt;  {&quot;protocol&quot;:&quot;finetuned&quot;,&quot;finetuned&quot;:true,&quot;status&quot;:&quot;ok&quot;}
+/judge（UTF-8 原始字节）        -&gt;  复杂并发重构 max(5.2s) ／ 翻译 low(5.7s) ／ 二分 high(5.4s)
+harness.log                    -&gt;  [router-laya] auto tier per turn; tiers low=provider/example-model effort=low high=… max=…
+                               -&gt;  [router-laya] judge service: already up (http://127.0.0.1:8765)
+启动图 ?token=…                 -&gt;  含 dsh-router-laya/client.js（刷新窗口后输入栏出现档位芯片）
+GET /router-laya/mode          -&gt;  {&quot;mode&quot;:&quot;auto&quot;,&quot;writable&quot;:true}
+再起一个服务实例                 -&gt;  立即退出：[single-instance] another router already owns 127.0.0.1:8765 -- exiting
+</code></pre>
+<h3 id="s35">H.3 本机特有的坑（按踩到的顺序）<a class="anchor" href="#s35" aria-label="本节链接">#</a></h3>
+<ol>
+<li><strong>没有 <code>dsh</code> CLI、没有 <code>~/.dsh</code></strong> —— 原文 §3.1 / §3.2 / 附录 D 的路径全部不成立；按 §3.1(b) 手写插入行。</li>
+<li><strong>热插入后 <code>mode</code> 首次读数可能是 <code>manual</code></strong> —— 插件直接不路由（<code>isManual()</code> 提前 return）；POST <code>{&quot;mode&quot;:&quot;auto&quot;}</code> 或在芯片上切一下即可，重新 apply 后稳定 <code>auto</code>。</li>
+<li><strong>任务文本有&quot;出生时刻&quot;</strong> —— <code>agent/inbox/claimed</code> 只对<strong>挂载之后</strong>领取的消息生效；挂载那一轮的日志会是 <code>(no task text captured) -&gt; … fallback … effort=low</code>，<strong>下一轮</strong>起才是真判定。</li>
+<li><strong>芯片要刷新窗口</strong> —— 启动图在页面加载时组合，热挂载的 bundle 不会自己出现在已打开的旧页面。</li>
+<li><strong>Windows 上 <code>SO_REUSEADDR</code> 让&quot;自然去重&quot;失效</strong> —— 见 H.1 步 5 与 §4.2 补充 2；这是本次唯一会<strong>吃光内存</strong>的问题。</li>
+<li><strong>PowerShell 探针的编码陷阱</strong> —— PS 5.1 的 <code>Invoke-RestMethod -Body &lt;string&gt;</code> 按本地代码页发中文，判定端收到一串 <code>?</code>，会得出&quot;复杂任务也只判 low&quot;的<strong>假结论</strong>。必须发 UTF-8 字节：<code>-Body ([Text.Encoding]::UTF8.GetBytes($json))</code>。与 §4.5「别用非法档位当探针」同类：<strong>先证明探针本身没坏</strong>。</li>
+<li><strong>在 DSH 沙箱里跑 agent 时的限制</strong> —— 写 <code>%LOCALAPPDATA%\Temp</code>、<code>Stop-Process</code>、<code>Get-NetTCPConnection</code>/WMI 可能被拒或是假阴性；进程状态照旧用 <code>netstat</code> + <code>/health</code> 判定，需要落盘就写工作区。</li>
+</ol>
+<h3 id="s36">H.4 归档与可复用脚本<a class="anchor" href="#s36" aria-label="本节链接">#</a></h3>
+<ul>
+<li>归档区 <code>~\.dsh-router-laya\</code> 追加 <code>dsh-side\</code>：<code>install-dsh-router-laya.ps1</code>（幂等：复制 loader + 写补丁行 + CORS + 重启）、<code>settle-judge-service.ps1</code>（收敛实例）、<code>add-single-instance-guard.ps1</code> / <code>fix-single-instance-guard.ps1</code>（闸门）。</li>
+<li><code>README.md</code> 已补「DSH 侧接入」一节（落点表 + 分叉表 + 验收记录）：本附录讲<strong>为什么</strong>，README 讲<strong>本机落点在哪</strong>。</li>
+</ul>
+
+</div>
+</body>
+</html>

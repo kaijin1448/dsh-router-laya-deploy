@@ -1,0 +1,48 @@
+# --- weights (842 MB, downloaded by deploy.ps1; never commit) ---
+*.safetensors
+*.safetensors.part
+*.safetensors.chunks.json
+weights/model/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+.venv-router/
+venv/
+*.egg-info/
+
+# --- Node ---
+node_modules/
+npm-debug.log*
+*.tgz
+
+# --- runtime artifacts / logs ---
+*.log
+laya-router-service*.log
+router-laya-oc.*
+*.spawn
+*.shared.json
+*.probe
+*.mode
+
+# --- patch backups (local, machine-specific) ---
+*.bak-*
+*.bak-patch-*
+*.orig-*
+*.before-*
+
+# --- local history snapshots (not part of the deploy kit) ---
+archive/
+
+# --- secrets / local env ---
+.env
+.env.*
+auth.json
+
+# --- OS / editor ---
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+.DS_Store

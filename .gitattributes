@@ -1,0 +1,11 @@
+# Normalize line endings: store LF in the repo, check out the platform-native
+# ending (CRLF on Windows for .ps1/.vbs, LF elsewhere). This avoids the classic
+# "PowerShell script has a bad line-ending" failure when cloning on Windows.
+* text=auto
+
+# Binary / generated: never convert or diff.
+*.safetensors binary
+*.png binary
+*.jpg binary
+*.whl  binary
+*.tgz  binary

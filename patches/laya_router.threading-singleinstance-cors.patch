@@ -1,0 +1,101 @@
+﻿diff --git a/service/laya_router.py b/service/laya_router.py
+index 6816930..f7ff3f5 100644
+--- a/service/laya_router.py
++++ b/service/laya_router.py
+@@ -180,6 +180,33 @@ def serve():
+         print(json.dumps(j, ensure_ascii=False), flush=True)
+ 
+ 
++def _claim_single_instance(port):
++    """Windows named-mutex gate: only one router may own this port.
++
++    HTTPServer defaults to allow_reuse_address, so a second process CAN bind the
++    same port (EADDRINUSE does not dedupe on Windows); the OC plugin's fail-safe
++    would then stack several 842 MB model instances -> memory collapses -> judging
++    times out -> more spawns, a positive feedback loop. Must run BEFORE the
++    checkpoint load, otherwise the duplicate still eats memory.
++    """
++    if os.name != "nt":
++        return None
++    import ctypes
++    from ctypes import wintypes
++    k = ctypes.WinDLL("kernel32", use_last_error=True)
++    k.CreateMutexW.restype = wintypes.HANDLE
++    k.CreateMutexW.argtypes = [wintypes.LPVOID, wintypes.BOOL, wintypes.LPCWSTR]
++    ctypes.set_last_error(0)
++    h = k.CreateMutexW(None, False, "dsh-router-laya-service-%d" % int(port))  # no backslash in the name
++    if not h:
++        return None
++    if ctypes.get_last_error() == 183:  # ERROR_ALREADY_EXISTS
++        print("[single-instance] another router already owns 127.0.0.1:%d -- exiting" % int(port),
++              file=sys.stderr, flush=True)
++        sys.exit(0)
++    return h  # held while the process lives; released by the kernel on exit
++
++
+ def http_serve(port=8765):
+     """HTTP mode: POST /judge {"task": "...", "prev_tier": ..., "prev_task": ...} -> judgment JSON.
+ 
+@@ -187,7 +214,14 @@ def http_serve(port=8765):
+       LAYA_MODEL 鏄湰鍦扮洰褰?鈫?寰皟鍗忚锛? noul 鍚?Q7 + 鎰忓浘瑙ｆ瀽 + 瑙勫垯寮曟搸鍚鍒? + C3 鍗囩骇 鈫?tier锛?       LAYA_MODEL 鏄粨搴?id   鈫?鍩哄骇鍗忚锛?鍒嗙被 difficulty + domain 绛夛級
+     """
+-    from http.server import HTTPServer, BaseHTTPRequestHandler
++    import threading
++    from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
++
++    # Threaded HTTP: concurrent /judge no longer queue on one socket. Torch
++    # inference stays serialized by _judge_lock (the model is not thread-safe).
++    _judge_lock = threading.Lock()
++    _log_lock = threading.Lock()
++    _instance_guard = _claim_single_instance(port)  # before the checkpoint load
+ 
+     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+ 
+@@ -261,24 +295,27 @@ def http_serve(port=8765):
+             session_id = body.get("session_id") or "default"
+             try:
+                 if protocol == "finetuned":
+-                    j = ft_judge(agent, task, prev_tier=prev_tier, prev_task=prev_task)
++                    with _judge_lock:
++                        j = ft_judge(agent, task, prev_tier=prev_tier, prev_task=prev_task)
+                 else:
+-                    j = decide(agent, task)
++                    with _judge_lock:
++                        j = decide(agent, task)
+                 j["id"] = body.get("id")
+                 j["protocol"] = protocol
+             except Exception as e:
+                 j = {"error": "%s: %s" % (type(e).__name__, e), "protocol": protocol}
+             if j.get("tier"):
+                 from collections import deque
+-                log = judge_log.setdefault(session_id, deque(maxlen=20))
+-                log.append({
+-                    "ts": time.time(),
+-                    "tier": j["tier"],
+-                    "triggered_by": j.get("triggered_by", ""),
+-                    "regenerate": bool(j.get("regenerate")),
+-                    "ms": j.get("ms"),
+-                    "task": (task or "")[:60],
+-                })
++                with _log_lock:
++                    log = judge_log.setdefault(session_id, deque(maxlen=20))
++                    log.append({
++                        "ts": time.time(),
++                        "tier": j["tier"],
++                        "triggered_by": j.get("triggered_by", ""),
++                        "regenerate": bool(j.get("regenerate")),
++                        "ms": j.get("ms"),
++                        "task": (task or "")[:60],
++                    })
+             payload = json.dumps(j, ensure_ascii=False).encode("utf-8")
+             self.send_response(200)
+             self.send_header("Content-Type", "application/json; charset=utf-8")
+@@ -315,7 +352,7 @@ def http_serve(port=8765):
+         def log_message(self, fmt, *args):
+             pass  # quiet
+ 
+-    server = HTTPServer(("127.0.0.1", port), Handler)
++    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+     print("Ready. POST http://127.0.0.1:%d/judge  GET /health" % port,
+           file=sys.stderr, flush=True)
+     server.serve_forever()
